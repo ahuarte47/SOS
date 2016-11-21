@@ -3,6 +3,7 @@ target
 .externalToolBuilders
 .project
 .settings
+.metadata
 nb*.xml
 pom.xml.tag
 pom.xml.releaseBackup
