@@ -32,11 +32,13 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.hibernate.Session;
+import org.n52.sos.cache.ContentCache;
 import org.n52.sos.ds.hibernate.entities.Procedure;
 import org.n52.sos.ds.hibernate.util.procedure.HibernateProcedureConverter;
 import org.n52.sos.ogc.gml.time.TimePeriod;
 import org.n52.sos.ogc.ows.OwsExceptionReport;
 import org.n52.sos.ogc.sos.SosProcedureDescription;
+import org.n52.sos.service.Configurator;
 import org.n52.sos.service.ServiceConfiguration;
 
 import com.google.common.collect.Iterables;
@@ -59,8 +61,10 @@ public class ProcedureDescriptionEnrichments {
     private Locale language = ServiceConfiguration.getInstance().getDefaultLanguage();
     private String typeOfIdentifier;
     private String typeOfFormat;
+    private ContentCache contentCache;
 
-    private ProcedureDescriptionEnrichments() {
+    private ProcedureDescriptionEnrichments(ContentCache contentCache) {
+        this.contentCache = contentCache;
     }
 
     public ProcedureDescriptionEnrichments setIdentifier(String identifier) {
@@ -74,6 +78,11 @@ public class ProcedureDescriptionEnrichments {
         return this;
     }
 
+    public ProcedureDescriptionEnrichments setContentCache(ContentCache contentCache) {
+        this.contentCache = contentCache;
+        return this;
+    }
+    
     public ProcedureDescriptionEnrichments setVersion(String version) {
         this.version = version;
         return this;
@@ -199,13 +208,14 @@ public class ProcedureDescriptionEnrichments {
     private <T extends ProcedureDescriptionEnrichment> T setValues(T enrichment) {
         enrichment.setDescription(description)
                 .setIdentifier(identifier)
+                .setCache(contentCache != null ? contentCache : Configurator.getInstance().getCache())
                 .setVersion(version)
                 .setLocale(language)
                 .setSession(session);
         return enrichment;
     }
 
-    public static ProcedureDescriptionEnrichments create() {
-        return new ProcedureDescriptionEnrichments();
+    public static ProcedureDescriptionEnrichments create(ContentCache contentCache) {
+        return new ProcedureDescriptionEnrichments(contentCache);
     }
 }

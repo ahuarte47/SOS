@@ -191,7 +191,7 @@ public abstract class AbstractOmObservationCreator {
         String pdf = hProcedure.getProcedureDescriptionFormat().getProcedureDescriptionFormat();
         if (getActiveProfile().isEncodeProcedureInObservation()) {
             return new HibernateProcedureConverter().createSosProcedureDescription(hProcedure, pdf, getVersion(),
-                    getSession());
+                    getSession(), getCache());
         } else {
             SosProcedureDescriptionUnknowType sosProcedure =
                     new SosProcedureDescriptionUnknowType(identifier, pdf, null);

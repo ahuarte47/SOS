@@ -65,6 +65,7 @@ import org.n52.sos.ogc.ows.OwsExceptionReport;
 import org.n52.sos.ogc.sos.Sos2Constants;
 import org.n52.sos.ogc.sos.SosConstants;
 import org.n52.sos.request.InsertObservationRequest;
+import org.n52.sos.request.RequestOperatorContext;
 import org.n52.sos.response.InsertObservationResponse;
 import org.n52.sos.service.ServiceConfiguration;
 import org.n52.sos.util.CollectionHelper;
@@ -100,7 +101,7 @@ public class InsertObservationDAO extends AbstractInsertObservationDAO {
     }
 
     @Override
-    public synchronized InsertObservationResponse insertObservation(final InsertObservationRequest request)
+    public synchronized InsertObservationResponse insertObservation(final InsertObservationRequest request, final RequestOperatorContext requestOperatorContext)
             throws OwsExceptionReport {
         final InsertObservationResponse response = new InsertObservationResponse();
         response.setService(request.getService());
@@ -135,7 +136,7 @@ public class InsertObservationDAO extends AbstractInsertObservationDAO {
                                 sosObservation.getIdentifier());
                     }
                 }
-                insertObservation(sosObservation, cache, exceptions, session);
+                insertObservation(sosObservation, cache, exceptions, session, requestOperatorContext);
 
                 // flush every FLUSH_INTERVAL
                 if (++obsCount % FLUSH_THRESHOLD == 0) {
@@ -180,13 +181,14 @@ public class InsertObservationDAO extends AbstractInsertObservationDAO {
     private void insertObservation(OmObservation sosObservation,
                                      InsertObservationCache cache,
                                      CompositeOwsException exceptions,
-                                     Session session)
+                                     Session session, 
+                                     final RequestOperatorContext requestOperatorContext)
             throws OwsExceptionReport, CodedException {
 
         checkSpatialFilteringProfile(sosObservation);
 
         OmObservationConstellation sosObsConst = sosObservation.getObservationConstellation();
-        Set<String> offerings = getParentProcedureOfferings(sosObsConst);
+        Set<String> offerings = getParentProcedureOfferings(sosObsConst, requestOperatorContext);
         sosObsConst.setOfferings(offerings);
         cache.addOfferings(offerings);
 
@@ -341,14 +343,14 @@ public class InsertObservationDAO extends AbstractInsertObservationDAO {
      *            Requested observation constellation
      * @return Requested offering and valid parent procedure offerings.
      */
-    private Set<String> getParentProcedureOfferings(OmObservationConstellation sosObsConst) {
+    private Set<String> getParentProcedureOfferings(OmObservationConstellation sosObsConst, final RequestOperatorContext requestOperatorContext) {
         Set<String> offerings = Sets.newHashSet(sosObsConst.getOfferings());
         // getFeature parent procedures
-        Set<String> parentProcedures = getCache().getParentProcedures(sosObsConst.getProcedure().getIdentifier(), true, false);
+        Set<String> parentProcedures = requestOperatorContext.getCache().getParentProcedures(sosObsConst.getProcedure().getIdentifier(), true, false);
         if (CollectionHelper.isNotEmpty(parentProcedures)) {
             for (String parentProcedure : parentProcedures) {
                 // getFeature offerings for parent procdure
-                Set<String> offeringsForParentProcedure = getCache().getOfferingsForProcedure(parentProcedure);
+                Set<String> offeringsForParentProcedure = requestOperatorContext.getCache().getOfferingsForProcedure(parentProcedure);
                 if (CollectionHelper.isNotEmpty(offeringsForParentProcedure)) {
                     for (String offering : offeringsForParentProcedure) {
                         /*
@@ -358,9 +360,9 @@ public class InsertObservationDAO extends AbstractInsertObservationDAO {
                          * offerings. If true, add offering to set.
                          */
                         Set<String> observablePropertiesForOffering =
-                                getCache().getObservablePropertiesForOffering(offering);
+                                requestOperatorContext.getCache().getObservablePropertiesForOffering(offering);
                         Set<String> offeringsForProcedure =
-                                getCache().getOfferingsForProcedure(sosObsConst.getProcedure().getIdentifier());
+                                requestOperatorContext.getCache().getOfferingsForProcedure(sosObsConst.getProcedure().getIdentifier());
                         if (CollectionHelper.isNotEmpty(observablePropertiesForOffering)
                                 && observablePropertiesForOffering.contains(sosObsConst.getObservableProperty()
                                         .getIdentifier()) && offeringsForProcedure.contains(offering)) {

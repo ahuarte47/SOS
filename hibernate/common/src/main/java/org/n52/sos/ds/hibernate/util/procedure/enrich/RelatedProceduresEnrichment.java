@@ -160,12 +160,12 @@ public class RelatedProceduresEnrichment extends ProcedureDescriptionEnrichment 
                 //matching child validProcedureTime was found, use it to build procedure description
                 SosProcedureDescription childDescription =
                         converter.createSosProcedureDescriptionFromValidProcedureTime(
-                                child, procedureDescriptionFormat, childVpt, getVersion(), getLocale(), getSession());
+                                child, procedureDescriptionFormat, childVpt, getVersion(), getLocale(), getSession(), getCache());
                 childProcedures.add(childDescription);                
             } else  if  (child != null) {
                 //no matching child validProcedureTime, generate the procedure description
                 SosProcedureDescription childDescription = converter.createSosProcedureDescription(
-                        child, procedureDescriptionFormat, getVersion(), procedureCache, getLocale(), getSession());
+                        child, procedureDescriptionFormat, getVersion(), procedureCache, getLocale(), getSession(), getCache());
                 // TODO check if call is necessary because it is also called in
                 // createSosProcedureDescription()
                 // addValuesToSensorDescription(childProcID,childProcedureDescription,

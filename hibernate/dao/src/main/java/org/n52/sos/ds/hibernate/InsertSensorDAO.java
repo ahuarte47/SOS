@@ -80,6 +80,7 @@ import org.n52.sos.ogc.sos.SosOffering;
 import org.n52.sos.ogc.sos.SosProcedureDescription;
 import org.n52.sos.ogc.swes.SwesFeatureRelationship;
 import org.n52.sos.request.InsertSensorRequest;
+import org.n52.sos.request.RequestOperatorContext;
 import org.n52.sos.response.InsertSensorResponse;
 import org.n52.sos.service.operator.ServiceOperatorKey;
 
@@ -262,10 +263,10 @@ public class InsertSensorDAO extends AbstractInsertSensorDAO implements Capabili
     }
     
     @Override
-    public CapabilitiesExtension getExtension() {
+    public CapabilitiesExtension getExtension(final RequestOperatorContext requestOperatorContext) {
         final SosInsertionCapabilities insertionCapabilities = new SosInsertionCapabilities();
-        insertionCapabilities.addFeatureOfInterestTypes(getCache().getFeatureOfInterestTypes());
-        insertionCapabilities.addObservationTypes(getCache().getObservationTypes());
+        insertionCapabilities.addFeatureOfInterestTypes(requestOperatorContext.getCache().getFeatureOfInterestTypes());
+        insertionCapabilities.addObservationTypes(requestOperatorContext.getCache().getObservationTypes());
         insertionCapabilities.addProcedureDescriptionFormats(CodingRepository.getInstance()
                 .getSupportedTransactionalProcedureDescriptionFormats(SosConstants.SOS, Sos2Constants.SERVICEVERSION));
         return insertionCapabilities;

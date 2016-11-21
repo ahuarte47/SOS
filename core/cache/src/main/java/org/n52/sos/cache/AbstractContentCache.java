@@ -861,7 +861,7 @@ public abstract class AbstractContentCache extends AbstractStaticContentCache {
     	return featureOfInterestIdentifierHumanReadableName.inverse();
     }
     
-    protected Map<String, String> getFeatureOfInterestHumanReadableNameForIdentifier() {
+    public Map<String, String> getFeatureOfInterestHumanReadableNameForIdentifier() {
     	return featureOfInterestIdentifierHumanReadableName;
     }
     
@@ -869,7 +869,7 @@ public abstract class AbstractContentCache extends AbstractStaticContentCache {
     	return observablePropertyIdentifierHumanReadableName.inverse();
     }
     
-    protected Map<String, String> getObservablePropertyHumanReadableNameForIdentifier() {
+    public Map<String, String> getObservablePropertyHumanReadableNameForIdentifier() {
     	return observablePropertyIdentifierHumanReadableName;
     }
     
@@ -877,7 +877,7 @@ public abstract class AbstractContentCache extends AbstractStaticContentCache {
     	return procedureIdentifierHumanReadableName.inverse();
     }
     
-    protected Map<String, String> getProcedureHumanReadableNameForIdentifier() {
+    public Map<String, String> getProcedureHumanReadableNameForIdentifier() {
     	return procedureIdentifierHumanReadableName;
     }
     
@@ -885,7 +885,7 @@ public abstract class AbstractContentCache extends AbstractStaticContentCache {
     	return offeringIdentifierHumanReadableName;
     }
     
-    protected Map<String, String> getOfferingHumanReadableNameForIdentifier() {
+    public Map<String, String> getOfferingHumanReadableNameForIdentifier() {
     	return offeringIdentifierHumanReadableName.inverse();
     }
     

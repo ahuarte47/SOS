@@ -88,6 +88,7 @@ import org.n52.sos.ogc.sos.Sos2Constants;
 import org.n52.sos.ogc.sos.SosConstants;
 import org.n52.sos.ogc.swes.SwesExtension;
 import org.n52.sos.ogc.swes.SwesExtensions;
+import org.n52.sos.request.RequestOperatorContext;
 import org.n52.sos.service.Configurator;
 import org.n52.sos.util.CollectionHelper;
 import org.n52.sos.util.StringHelper;
@@ -138,10 +139,10 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
     }
 
     @Override
-    public GetDataAvailabilityResponse getDataAvailability(GetDataAvailabilityRequest req) throws OwsExceptionReport {
+    public GetDataAvailabilityResponse getDataAvailability(GetDataAvailabilityRequest req, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         Session session = sessionHolder.getSession();
         try {
-            List<?> dataAvailabilityValues = queryDataAvailabilityValues(req, session);
+            List<?> dataAvailabilityValues = queryDataAvailabilityValues(req, session, requestOperatorContext);
             GetDataAvailabilityResponse response = req.getResponse();
             response.setNamespace(req.getNamespace());
             for (Object o : dataAvailabilityValues) {
@@ -169,7 +170,7 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
      * @throws OwsExceptionReport
      *             If an error occurs
      */
-    private List<?> queryDataAvailabilityValues(GetDataAvailabilityRequest req, Session session)
+    private List<?> queryDataAvailabilityValues(GetDataAvailabilityRequest req, Session session, final RequestOperatorContext requestOperatorContext)
             throws OwsExceptionReport {
         // check is named queries are supported
         if (checkForNamedQueries(req, session)) {
@@ -177,7 +178,7 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
         }
         // check if series mapping is supporte
         else if (EntitiyHelper.getInstance().isSeriesSupported()) {
-            return querySeriesDataAvailabilities(req, session);
+            return querySeriesDataAvailabilities(req, session, requestOperatorContext);
         } else {
             Criteria c = getDefaultObservationInfoCriteria(session);
 
@@ -280,7 +281,7 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
      * @throws OwsExceptionReport
      *             If an error occurs
      */
-    private List<?> querySeriesDataAvailabilities(GetDataAvailabilityRequest request, Session session)
+    private List<?> querySeriesDataAvailabilities(GetDataAvailabilityRequest request, Session session, final RequestOperatorContext requestOperatorContext)
             throws OwsExceptionReport {
         GdaRequestContext context = new GdaRequestContext()
                 .setRequest(request)
@@ -292,7 +293,7 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
             if (gdaV20) {
                 context.setMinMaxTransformer(new SeriesOfferingMinMaxTransformer())
                 .setSupportsNamedQuery(HibernateHelper.isNamedQuerySupported(SQL_QUERY_GET_OFFERING_DATA_AVAILABILITY_FOR_SERIES, session));
-                processDataAvailabilityForEachOffering(series, context, session);
+                processDataAvailabilityForEachOffering(series, context, session, requestOperatorContext);
             } else {
                 context.setMinMaxTransformer(new SeriesMinMaxTransformer())
                 .setSupportsNamedQuery(HibernateHelper.isNamedQuerySupported(SQL_QUERY_GET_DATA_AVAILABILITY_FOR_SERIES, session));
@@ -322,7 +323,7 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
      * @throws OwsExceptionReport
      *             If an error occurs
      */
-    private void processDataAvailabilityForEachOffering(Series series, GdaRequestContext context, Session session) throws OwsExceptionReport {
+    private void processDataAvailabilityForEachOffering(Series series, GdaRequestContext context, Session session, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         List<OfferingMinMaxTime> offeringTimePeriodList = null;
         if (series.isSetOffering() && series.isSetFirstLastTime()) {
             offeringTimePeriodList = Lists.newArrayList();
@@ -358,13 +359,13 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
                                 context.getRequest(), session));
                     }
                     dataAvailability.setOffering(getOfferingReference(series, context.getOfferings(), ommt.getOffering(), session));
-                    dataAvailability.setFormatDescriptor(getFormatDescriptor(ommt.getOffering(), context, series));
+                    dataAvailability.setFormatDescriptor(getFormatDescriptor(ommt.getOffering(), context, series, requestOperatorContext));
                     checkForMetadataExtension(dataAvailability, series, session);
                     context.addDataAvailability(dataAvailability);
                 }
             }
         }
-        checkForParentOfferings(context);
+        checkForParentOfferings(context, requestOperatorContext);
     }
 
     private void checkForMetadataExtension(DataAvailability dataAvailability, Series series, Session session) {
@@ -379,11 +380,11 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
         }
     }
 
-    private void checkForParentOfferings(GdaRequestContext context) {
+    private void checkForParentOfferings(GdaRequestContext context, final RequestOperatorContext requestOperatorContext) {
         if (context.isSetDataAvailabilityList()) {
             List<String> requestedOfferings = context.getRequest().getOfferings();
             for (String requestedOffering : requestedOfferings) {
-                Set<String> childOfferings = getCache().getChildOfferings(requestedOffering, true, false);
+                Set<String> childOfferings = requestOperatorContext.getCache().getChildOfferings(requestedOffering, true, false);
                 if (!childOfferings.isEmpty()) {
                     if (context.hasDataAvailability(requestedOffering)) {
                         Set<DataAvailability> parentDataAvailabilities =
@@ -665,16 +666,16 @@ public class GetDataAvailabilityDAO extends AbstractGetDataAvailabilityDAO imple
         return (Long) criteria.uniqueResult();
     }
 
-    private FormatDescriptor getFormatDescriptor(String offering, GdaRequestContext context, Series series) {
+    private FormatDescriptor getFormatDescriptor(String offering, GdaRequestContext context, Series series, final RequestOperatorContext requestOperatorContext) {
         return new FormatDescriptor(
                 new ProcedureDescriptionFormatDescriptor(
                         series.getProcedure().getProcedureDescriptionFormat().getProcedureDescriptionFormat()),
-                getObservationFormatDescriptors(offering, context));
+                getObservationFormatDescriptors(offering, context, requestOperatorContext));
     }
 
-    private Set<ObservationFormatDescriptor> getObservationFormatDescriptors(String offering, GdaRequestContext context) {
+    private Set<ObservationFormatDescriptor> getObservationFormatDescriptors(String offering, GdaRequestContext context, final RequestOperatorContext requestOperatorContext) {
         Map<String, Set<String>> responsFormatObservationTypesMap = Maps.newHashMap();
-        for (String observationType : getCache().getAllObservationTypesForOffering(offering)) {
+        for (String observationType : requestOperatorContext.getCache().getAllObservationTypesForOffering(offering)) {
             Set<String> responseFormats = CodingRepository.getInstance().getResponseFormatsForObservationType(observationType, context.getRequest().getService(), context.getRequest().getVersion());
             for (String responseFormat : responseFormats) {
                 if (responsFormatObservationTypesMap.containsKey(responseFormat)) {

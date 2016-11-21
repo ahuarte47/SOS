@@ -40,6 +40,7 @@ import org.n52.sos.ogc.ows.CompositeOwsException;
 import org.n52.sos.ogc.ows.OwsExceptionReport;
 import org.n52.sos.ogc.sos.Sos2Constants;
 import org.n52.sos.ogc.sos.SosConstants;
+import org.n52.sos.request.RequestOperatorContext;
 import org.n52.sos.request.operator.AbstractTransactionalRequestOperator;
 import org.n52.sos.request.operator.RequestOperator;
 import org.n52.sos.service.Configurator;
@@ -61,7 +62,7 @@ public class DeleteObservationRequestOperator
     }
 
     @Override
-    public DeleteObservationResponse receive(DeleteObservationRequest request) throws OwsExceptionReport {
+    public DeleteObservationResponse receive(DeleteObservationRequest request, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         DeleteObservationResponse response = getDao().deleteObservation(request);
         SosEventBus.fire(new DeleteObservationEvent(request, response));
         return response;
@@ -72,7 +73,7 @@ public class DeleteObservationRequestOperator
     }
 
     @Override
-    protected void checkParameters(DeleteObservationRequest sosRequest) throws OwsExceptionReport {
+    protected void checkParameters(DeleteObservationRequest sosRequest, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         CompositeOwsException exceptions = new CompositeOwsException();
         try {
             checkServiceParameter(sosRequest.getService());
@@ -99,22 +100,22 @@ public class DeleteObservationRequestOperator
                 }
             }
             try {
-                checkOfferingId(sosRequest.getOfferings());
+                checkOfferingId(sosRequest.getOfferings(), requestOperatorContext);
             } catch (OwsExceptionReport owse) {
                 exceptions.add(owse);
             }
             try {
-                checkObservedProperties(sosRequest.getObservedProperties(), DeleteObservationConstants.PARAM_OBSERVED_PROPERTY, false);
+                checkObservedProperties(sosRequest.getObservedProperties(), DeleteObservationConstants.PARAM_OBSERVED_PROPERTY, false, requestOperatorContext);
             } catch (OwsExceptionReport owse) {
                 exceptions.add(owse);
             }
             try {
-                checkProcedureIDs(sosRequest.getProcedures(), DeleteObservationConstants.PARAM_PROCEDURE);
+                checkProcedureIDs(sosRequest.getProcedures(), DeleteObservationConstants.PARAM_PROCEDURE, requestOperatorContext);
             } catch (OwsExceptionReport owse) {
                 exceptions.add(owse);
             }
             try {
-                checkFeatureOfInterestIdentifiers(sosRequest.getFeatureIdentifiers(), DeleteObservationConstants.PARAM_FEATURE_OF_INTEREST);
+                checkFeatureOfInterestIdentifiers(sosRequest.getFeatureIdentifiers(), DeleteObservationConstants.PARAM_FEATURE_OF_INTEREST, requestOperatorContext);
             } catch (OwsExceptionReport owse) {
                 exceptions.add(owse);
             }
@@ -133,9 +134,9 @@ public class DeleteObservationRequestOperator
      * @throws OwsExceptionReport
      *             if the passed offeringId is not supported
      */
-    private void checkOfferingId(final Set<String> offeringIds) throws OwsExceptionReport {
+    private void checkOfferingId(final Set<String> offeringIds, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         if (offeringIds != null) {
-            final Set<String> offerings = Configurator.getInstance().getCache().getOfferings();
+            final Set<String> offerings = requestOperatorContext.getCache().getOfferings();
             final CompositeOwsException exceptions = new CompositeOwsException();
             for (final String offeringId : offeringIds) {
                 if (offeringId == null || offeringId.isEmpty()) {
@@ -143,7 +144,7 @@ public class DeleteObservationRequestOperator
                 } else if (offeringId.contains(SosConstants.SEPARATOR_4_OFFERINGS)) {
                     final String[] offArray = offeringId.split(SosConstants.SEPARATOR_4_OFFERINGS);
                     if (!offerings.contains(offArray[0])
-                            || !getCache().getProceduresForOffering(offArray[0]).contains(offArray[1])) {
+                            || !requestOperatorContext.getCache().getProceduresForOffering(offArray[0]).contains(offArray[1])) {
                         exceptions.add(new InvalidOfferingParameterException(offeringId));
                     }
 

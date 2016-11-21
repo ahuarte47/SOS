@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.hibernate.Session;
+import org.n52.sos.cache.ContentCache;
 import org.n52.sos.convert.Converter;
 import org.n52.sos.convert.ConverterException;
 import org.n52.sos.convert.ConverterRepository;
@@ -88,6 +89,8 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
      *            Requested SOS version
      * @param session
      *            Hibernate session
+     * @param contentCache
+     *            ContentCache
      *
      * @return created SosProcedureDescription
      *
@@ -95,11 +98,11 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
      *             If an error occurs
      */
     public SosProcedureDescription createSosProcedureDescription(Procedure procedure,
-            String requestedDescriptionFormat, String requestedServiceVersion, Session session)
+            String requestedDescriptionFormat, String requestedServiceVersion, Session session, ContentCache contentCache)
             throws OwsExceptionReport {
         // child hierarchy procedures haven't been queried yet, pass null
         return createSosProcedureDescription(procedure, requestedDescriptionFormat, requestedServiceVersion, null,
-                session);
+                session, contentCache);
     }
 
     /**
@@ -116,6 +119,8 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
      *            avoid multiple queries)
      * @param session
      *            Hibernate session
+     * @param contentCache
+     *            ContentCache
      *
      * @return created SosProcedureDescription
      *
@@ -124,7 +129,7 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
      */
     public SosProcedureDescription createSosProcedureDescription(Procedure procedure,
             String requestedDescriptionFormat, String requestedServiceVersion,
-            Map<String, Procedure> loadedProcedures, Locale i18n, Session session) throws OwsExceptionReport {
+            Map<String, Procedure> loadedProcedures, Locale i18n, Session session, ContentCache contentCache) throws OwsExceptionReport {
         if (procedure == null) {
             throw new NoApplicableCodeException().causedBy(
                     new IllegalArgumentException("Parameter 'procedure' should not be null!")).setStatus(
@@ -136,7 +141,7 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
         if (desc != null) {
             addHumanReadableName(desc, procedure);
             enrich(desc, procedure, requestedServiceVersion, requestedDescriptionFormat, null, loadedProcedures, i18n,
-                    session);
+                    session, contentCache);
             if (!requestedDescriptionFormat.equals(desc.getDescriptionFormat())) {
                 desc = convert(desc.getDescriptionFormat(), requestedDescriptionFormat, desc);
                 desc.setDescriptionFormat(requestedDescriptionFormat);
@@ -157,6 +162,8 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
      *            Requested SOS version
      * @param session
      *            Hibernate session
+     * @param contentCache
+     *            ContentCache
      *
      * @return created SosProcedureDescription
      *
@@ -164,7 +171,7 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
      *             If an error occurs
      */
     public SosProcedureDescription createSosProcedureDescriptionFromValidProcedureTime(Procedure procedure,
-            String requestedDescriptionFormat, ValidProcedureTime vpt, String version, Locale i18n, Session session)
+            String requestedDescriptionFormat, ValidProcedureTime vpt, String version, Locale i18n, Session session, ContentCache contentCache)
             throws OwsExceptionReport {
         if (vpt != null) {
             checkOutputFormatWithDescriptionFormat(procedure.getIdentifier(), vpt, requestedDescriptionFormat,
@@ -178,7 +185,7 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
         if (description.isPresent()) {
             addHumanReadableName(description.get(), procedure);
             enrich(description.get(), procedure, version, requestedDescriptionFormat, getValidTime(vpt), null, i18n,
-                    session);
+                    session, contentCache);
             if (!requestedDescriptionFormat.equals(description.get().getDescriptionFormat())) {
                 SosProcedureDescription converted =
                         convert(description.get().getDescriptionFormat(), requestedDescriptionFormat,
@@ -191,10 +198,10 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
     }
 
     public SosProcedureDescription createSosProcedureDescription(Procedure procedure,
-            String requestedDescriptionFormat, String requestedServiceVersion, Locale i18n, Session session)
+            String requestedDescriptionFormat, String requestedServiceVersion, Locale i18n, Session session, ContentCache contentCache)
             throws OwsExceptionReport {
         return createSosProcedureDescription(procedure, requestedDescriptionFormat, requestedServiceVersion, null,
-                i18n, session);
+                i18n, session, contentCache);
     }
 
     private void addHumanReadableName(SosProcedureDescription desc, Procedure procedure) {
@@ -304,16 +311,18 @@ public class HibernateProcedureConverter implements HibernateSqlQueryConstants {
      *            the language
      * @param session
      *            the session
+     * @param contentCache
+     *            the content cache
      *
      * @see HibernateProcedureEnrichment
      * @throws OwsExceptionReport
      *             if the enrichment fails
      */
     private void enrich(SosProcedureDescription desc, Procedure procedure, String version, String format,
-            TimePeriod validTime, Map<String, Procedure> cache, Locale language, Session session)
+            TimePeriod validTime, Map<String, Procedure> cache, Locale language, Session session, ContentCache contentCache)
             throws OwsExceptionReport {
         ProcedureDescriptionEnrichments enrichments =
-                ProcedureDescriptionEnrichments.create().setIdentifier(procedure.getIdentifier()).setVersion(version)
+                ProcedureDescriptionEnrichments.create(contentCache).setIdentifier(procedure.getIdentifier()).setVersion(version)
                         .setDescription(desc).setProcedureDescriptionFormat(format).setSession(session)
                         .setValidTime(validTime).setProcedureCache(cache).setConverter(this).setLanguage(language);
         if (procedure.isSetTypeOf()) {

@@ -58,13 +58,19 @@ public abstract class ProcedureDescriptionEnrichment {
     private String identifier;
     private Locale locale = ServiceConfiguration.getInstance().getDefaultLanguage();
     private Session session;
+    private ContentCache contentCache;
 
     protected ProcedureDescriptionSettings procedureSettings() {
         return ProcedureDescriptionSettings.getInstance();
     }
 
+    public ProcedureDescriptionEnrichment setCache(ContentCache contentCache) {
+        this.contentCache = contentCache;
+        return this;
+    }
+
     protected ContentCache getCache() {
-        return Configurator.getInstance().getCache();
+        return contentCache != null ? contentCache : Configurator.getInstance().getCache();
     }
 
     protected Collection<SosOffering> getSosOfferings() {

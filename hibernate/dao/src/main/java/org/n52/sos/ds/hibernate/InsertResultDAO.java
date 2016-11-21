@@ -90,6 +90,7 @@ import org.n52.sos.ogc.swe.simpleType.SweAbstractSimpleType;
 import org.n52.sos.ogc.swe.simpleType.SweAbstractUomType;
 import org.n52.sos.ogc.swe.simpleType.SweText;
 import org.n52.sos.request.InsertResultRequest;
+import org.n52.sos.request.RequestOperatorContext;
 import org.n52.sos.response.InsertResultResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +125,7 @@ public class InsertResultDAO extends AbstractInsertResultDAO implements Capabili
     }
 
     @Override
-    public synchronized InsertResultResponse insertResult(final InsertResultRequest request) throws OwsExceptionReport {
+    public synchronized InsertResultResponse insertResult(final InsertResultRequest request, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         final InsertResultResponse response = new InsertResultResponse();
         response.setService(request.getService());
         response.setVersion(request.getVersion());
@@ -141,7 +142,7 @@ public class InsertResultDAO extends AbstractInsertResultDAO implements Capabili
             transaction = session.beginTransaction();
             final OmObservation o =
                     getSingleObservationFromResultValues(response.getVersion(), resultTemplate,
-                            request.getResultValues(), session);
+                            request.getResultValues(), session, requestOperatorContext);
             final List<OmObservation> observations = getSingleObservationsFromObservation(o);
             if (o.getObservationConstellation().isSetFeatureOfInterest() && o.getObservationConstellation().isSetProcedure()) {
                 response.setObservation(o);
@@ -223,14 +224,14 @@ public class InsertResultDAO extends AbstractInsertResultDAO implements Capabili
      *             If an error occurs during the processing
      */
     private OmObservation getSingleObservationFromResultValues(final String version,
-            final ResultTemplate resultTemplate, final String resultValues, final Session session)
+            final ResultTemplate resultTemplate, final String resultValues, final Session session, final RequestOperatorContext requestOperatorContext)
             throws OwsExceptionReport {
         final SosResultEncoding resultEncoding = new SosResultEncoding(resultTemplate.getResultEncoding());
         final SosResultStructure resultStructure = new SosResultStructure(resultTemplate.getResultStructure());
         final String[] blockValues = getBlockValues(resultValues, resultEncoding.getEncoding());
         final OmObservation singleObservation =
                 getObservation(resultTemplate, blockValues, resultStructure.getResultStructure(),
-                        resultEncoding.getEncoding(), session);
+                        resultEncoding.getEncoding(), session, requestOperatorContext);
 //        final AbstractFeature feature = getSosAbstractFeature(resultTemplate.getFeatureOfInterest(), version, session);
 //        singleObservation.getObservationConstellation().setFeatureOfInterest(feature);
         return singleObservation;
@@ -290,7 +291,7 @@ public class InsertResultDAO extends AbstractInsertResultDAO implements Capabili
      * @return Internal ObservationConstellation
      */
     private OmObservationConstellation getSosObservationConstellation(final ResultTemplate resultTemplate,
-            final Session session) {
+            final Session session, final RequestOperatorContext requestOperatorContext) {
 
         final List<ObservationConstellation> obsConsts = new ObservationConstellationDAO()
                 .getObservationConstellationsForOfferings(resultTemplate.getObservableProperty(),
@@ -347,7 +348,7 @@ public class InsertResultDAO extends AbstractInsertResultDAO implements Capabili
      *             If processing fails
      */
     private OmObservation getObservation(final ResultTemplate resultTemplate, final String[] blockValues,
-            final SweAbstractDataComponent resultStructure, final SweAbstractEncoding encoding, final Session session)
+            final SweAbstractDataComponent resultStructure, final SweAbstractEncoding encoding, final Session session, final RequestOperatorContext requestOperatorContext)
             throws OwsExceptionReport {
         final int resultTimeIndex = helper.hasResultTime(resultStructure);
         final int phenomenonTimeIndex = helper.hasPhenomenonTime(resultStructure);
@@ -366,7 +367,7 @@ public class InsertResultDAO extends AbstractInsertResultDAO implements Capabili
                 createObservationValueFrom(blockValues, record, encoding, resultTimeIndex, phenomenonTimeIndex);
 
         final OmObservation observation = new OmObservation();
-        observation.setObservationConstellation(getSosObservationConstellation(resultTemplate, session));
+        observation.setObservationConstellation(getSosObservationConstellation(resultTemplate, session, requestOperatorContext));
         observation.setResultType(OmConstants.OBS_TYPE_SWE_ARRAY_OBSERVATION);
         observation.setValue(sosValues);
         return observation;
@@ -527,10 +528,10 @@ public class InsertResultDAO extends AbstractInsertResultDAO implements Capabili
     }
 
     @Override
-    public CapabilitiesExtension getExtension() {
+    public CapabilitiesExtension getExtension(final RequestOperatorContext requestOperatorContext) {
         final SosInsertionCapabilities insertionCapabilities = new SosInsertionCapabilities();
-        insertionCapabilities.addFeatureOfInterestTypes(getCache().getFeatureOfInterestTypes());
-        insertionCapabilities.addObservationTypes(getCache().getObservationTypes());
+        insertionCapabilities.addFeatureOfInterestTypes(requestOperatorContext.getCache().getFeatureOfInterestTypes());
+        insertionCapabilities.addObservationTypes(requestOperatorContext.getCache().getObservationTypes());
         insertionCapabilities.addProcedureDescriptionFormats(CodingRepository.getInstance()
                 .getSupportedTransactionalProcedureDescriptionFormats(SosConstants.SOS, Sos2Constants.SERVICEVERSION));
         // TODO dynamic

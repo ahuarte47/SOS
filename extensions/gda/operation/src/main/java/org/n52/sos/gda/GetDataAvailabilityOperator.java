@@ -40,6 +40,7 @@ import org.n52.sos.ogc.ows.CompositeOwsException;
 import org.n52.sos.ogc.ows.OwsExceptionReport;
 import org.n52.sos.ogc.sos.Sos2Constants;
 import org.n52.sos.ogc.sos.SosConstants;
+import org.n52.sos.request.RequestOperatorContext;
 import org.n52.sos.request.operator.AbstractRequestOperator;
 import org.n52.sos.request.operator.WSDLAwareRequestOperator;
 import org.n52.sos.wsdl.WSDLOperation;
@@ -73,12 +74,12 @@ public class GetDataAvailabilityOperator
     }
 
     @Override
-    public GetDataAvailabilityResponse receive(GetDataAvailabilityRequest sosRequest) throws OwsExceptionReport {
-        return getDao().getDataAvailability(sosRequest);
+    public GetDataAvailabilityResponse receive(GetDataAvailabilityRequest sosRequest, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
+        return getDao().getDataAvailability(sosRequest, requestOperatorContext);
     }
 
     @Override
-    protected void checkParameters(GetDataAvailabilityRequest request) throws OwsExceptionReport {
+    protected void checkParameters(GetDataAvailabilityRequest request, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         CompositeOwsException exceptions = new CompositeOwsException();
 
         try {
@@ -94,33 +95,33 @@ public class GetDataAvailabilityOperator
 
         try {
             checkObservedProperties(request.getObservedProperties(),
-                    GetDataAvailabilityParams.observedProperty.name(), false);
+                    GetDataAvailabilityParams.observedProperty.name(), false, requestOperatorContext);
         } catch (OwsExceptionReport owse) {
             exceptions.add(owse);
         }
         try {
-            checkQueryableProcedureIDs(request.getProcedures(), GetDataAvailabilityParams.procedure.name());
+            checkQueryableProcedureIDs(request.getProcedures(), GetDataAvailabilityParams.procedure.name(), requestOperatorContext);
             // add instance and child procedures to request
             if (request.isSetProcedure()) {
-                request.setProcedures(addChildProcedures(addInstanceProcedures(request.getProcedures())));
+                request.setProcedures(addChildProcedures(addInstanceProcedures(request.getProcedures(), requestOperatorContext), requestOperatorContext));
             }
         } catch (OwsExceptionReport owse) {
             exceptions.add(owse);
         }
         try {
             checkFeatureOfInterestIdentifiers(request.getFeaturesOfInterest(),
-                    GetDataAvailabilityParams.featureOfInterest.name());
+                    GetDataAvailabilityParams.featureOfInterest.name(), requestOperatorContext);
             if (request.isSetFeaturesOfInterest()) {
-                request.setFeatureOfInterest(addChildFeatures(request.getFeaturesOfInterest()));
+                request.setFeatureOfInterest(addChildFeatures(request.getFeaturesOfInterest(), requestOperatorContext));
             }
         } catch (OwsExceptionReport owse) {
             exceptions.add(owse);
         }
         try {
-            checkOfferings(request.getOfferings(), GetDataAvailabilityParams.offering);
+            checkOfferings(request.getOfferings(), GetDataAvailabilityParams.offering, requestOperatorContext);
             // add child offerings to request
             if (request.isSetOfferings()) {
-                request.setOfferings(addChildOfferings(request.getOfferings()));
+                request.setOfferings(addChildOfferings(request.getOfferings(), requestOperatorContext));
             }
         } catch (OwsExceptionReport owse) {
             exceptions.add(owse);

@@ -50,8 +50,8 @@ import org.n52.sos.ogc.sos.ConformanceClasses;
 import org.n52.sos.ogc.sos.Sos2Constants;
 import org.n52.sos.ogc.swe.SweDataRecord;
 import org.n52.sos.request.InsertResultTemplateRequest;
+import org.n52.sos.request.RequestOperatorContext;
 import org.n52.sos.response.InsertResultTemplateResponse;
-import org.n52.sos.service.Configurator;
 import org.n52.sos.service.ServiceSettings;
 import org.n52.sos.wsdl.WSDLConstants;
 import org.n52.sos.wsdl.WSDLOperation;
@@ -85,14 +85,14 @@ public class SosInsertResultTemplateOperatorV20
     }
 
     @Override
-    public InsertResultTemplateResponse receive(InsertResultTemplateRequest request) throws OwsExceptionReport {
-        InsertResultTemplateResponse response = getDao().insertResultTemplate(request);
+    public InsertResultTemplateResponse receive(InsertResultTemplateRequest request, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
+        InsertResultTemplateResponse response = getDao().insertResultTemplate(request, requestOperatorContext);
         SosEventBus.fire(new ResultTemplateInsertion(request, response));
         return response;
     }
 
     @Override
-    protected void checkParameters(InsertResultTemplateRequest request) throws OwsExceptionReport {
+    protected void checkParameters(InsertResultTemplateRequest request, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         createCompositePhenomenons(request);
         CompositeOwsException exceptions = new CompositeOwsException();
         try {
@@ -108,9 +108,9 @@ public class SosInsertResultTemplateOperatorV20
         // check offering
         try {
             checkOfferings(request.getObservationTemplate().getOfferings(),
-                    Sos2Constants.InsertResultTemplateParams.proposedTemplate);
+                    Sos2Constants.InsertResultTemplateParams.proposedTemplate, requestOperatorContext);
             try {
-                checkObservationType(request);
+                checkObservationType(request, requestOperatorContext);
             } catch (OwsExceptionReport owse) {
                 exceptions.add(owse);
             }
@@ -138,7 +138,7 @@ public class SosInsertResultTemplateOperatorV20
                             Sos2Constants.InsertResultTemplateParams.proposedTemplate));
                 }
                 checkTransactionalProcedureID(request.getObservationTemplate().getProcedureIdentifier(),
-                        Sos2Constants.InsertResultTemplateParams.proposedTemplate.name());
+                        Sos2Constants.InsertResultTemplateParams.proposedTemplate.name(), requestOperatorContext);
             }
         } catch (OwsExceptionReport owse) {
             exceptions.add(owse);
@@ -146,7 +146,7 @@ public class SosInsertResultTemplateOperatorV20
         // check observedProperty
         try {
             checkObservedProperty(request.getObservationTemplate().getObservableProperty().getIdentifier(),
-                    Sos2Constants.InsertResultTemplateParams.proposedTemplate, true);
+                    Sos2Constants.InsertResultTemplateParams.proposedTemplate, true, requestOperatorContext);
         } catch (OwsExceptionReport owse) {
             exceptions.add(owse);
         }
@@ -179,7 +179,7 @@ public class SosInsertResultTemplateOperatorV20
 
         // check identifier
         try {
-            checkResultTemplateIdentifier(request.getIdentifier());
+            checkResultTemplateIdentifier(request.getIdentifier(), requestOperatorContext);
         } catch (OwsExceptionReport owse) {
             exceptions.add(owse);
         }
@@ -249,27 +249,27 @@ public class SosInsertResultTemplateOperatorV20
         }
     }
 
-    private void checkResultTemplateIdentifier(String identifier) throws OwsExceptionReport {
-        if (getCache().hasResultTemplate(identifier)) {
+    private void checkResultTemplateIdentifier(String identifier, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
+        if (requestOperatorContext.getCache().hasResultTemplate(identifier)) {
             throw new DuplicateIdentifierException("resultTemplate", identifier);
         }
         // check for reserved character
         checkReservedCharacter(identifier, "resultTemplateIdentifier");
     }
 
-    private void checkObservationType(InsertResultTemplateRequest request) throws OwsExceptionReport {
+    private void checkObservationType(InsertResultTemplateRequest request, final RequestOperatorContext requestOperatorContext) throws OwsExceptionReport {
         OmObservationConstellation observationConstellation = request.getObservationTemplate();
         if (observationConstellation.isSetObservationType()) {
             // TODO check why setting SweArray_Observation as type
             //observationConstellation.setObservationType(OmConstants.OBS_TYPE_SWE_ARRAY_OBSERVATION);
             // check if observation type is supported
             checkObservationType(observationConstellation.getObservationType(),
-                    Sos2Constants.InsertResultTemplateParams.observationType.name());
+                    Sos2Constants.InsertResultTemplateParams.observationType.name(), requestOperatorContext);
         }
        
         Set<String> validObservationTypesForOffering = new HashSet<String>(0);
         for (String offering : observationConstellation.getOfferings()) {
-            validObservationTypesForOffering.addAll(Configurator.getInstance().getCache()
+            validObservationTypesForOffering.addAll(requestOperatorContext.getCache()
                     .getAllowedObservationTypesForOffering(offering));
         }
         // check if observation type is valid for offering

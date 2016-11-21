@@ -101,6 +101,7 @@ import org.n52.sos.request.InsertObservationRequest;
 import org.n52.sos.request.InsertResultRequest;
 import org.n52.sos.request.InsertResultTemplateRequest;
 import org.n52.sos.request.InsertSensorRequest;
+import org.n52.sos.request.RequestOperatorContext;
 import org.n52.sos.request.operator.SosInsertObservationOperatorV20;
 import org.n52.sos.response.DeleteSensorResponse;
 import org.n52.sos.response.GetObservationResponse;
@@ -350,7 +351,11 @@ public class InsertDAOTest extends HibernateTestCase {
         xbDataRecordDoc.addNewDataRecord().set(CodingHelper.encodeObjectToXml(SweConstants.NS_SWE_20, dataRecord));
         resultStructure.getResultStructure().setXml(xbDataRecordDoc.xmlText());
         req.setResultStructure(resultStructure);
-        InsertResultTemplateResponse resp = insertResultTemplateDAO.insertResultTemplate(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertResultTemplateResponse resp = insertResultTemplateDAO.insertResultTemplate(req, requestOperatorContext);
         SosEventBus.fire(new ResultTemplateInsertion(req, resp));
     }
 
@@ -366,10 +371,11 @@ public class InsertDAOTest extends HibernateTestCase {
             String offeringId, String featureId, String obsType, Session session) throws OwsExceptionReport,
             ConverterException {
         OmObservationConstellation obsConst = new OmObservationConstellation();
+        ContentCache contentCache = Configurator.getInstance().getCache();
         Procedure procedure = new ProcedureDAO().getProcedureForIdentifier(procedureId, session);
         SosProcedureDescription spd =
                 new HibernateProcedureConverter().createSosProcedureDescription(procedure, SensorMLConstants.NS_SML,
-                        Sos2Constants.SERVICEVERSION, session);
+                        Sos2Constants.SERVICEVERSION, session, contentCache);
         obsConst.setProcedure(spd);
         OmObservableProperty omObservableProperty = new OmObservableProperty(obsPropId);
         omObservableProperty.setUnit(unit);
@@ -517,7 +523,10 @@ public class InsertDAOTest extends HibernateTestCase {
         req.setAssignedSensorId(PROCEDURE3);
         req.setOfferings(Lists.newArrayList(OFFERING3));
         OmObservation obs = new OmObservation();
-
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
         Session session = getSession();
         obs.setObservationConstellation(getOmObsConst(PROCEDURE3, OBSPROP3, TEMP_UNIT, OFFERING3, FEATURE3,
                 OmConstants.OBS_TYPE_MEASUREMENT, session));
@@ -529,7 +538,7 @@ public class InsertDAOTest extends HibernateTestCase {
         obsVal.setValue(new QuantityValue(Double.valueOf(OBS_VAL), TEMP_UNIT));
         obs.setValue(obsVal);
         req.setObservation(Lists.newArrayList(obs));
-        InsertObservationResponse resp = insertObservationDAO.insertObservation(req);
+        InsertObservationResponse resp = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
 
@@ -626,7 +635,11 @@ public class InsertDAOTest extends HibernateTestCase {
         req.setTemplateIdentifier(RESULT_TEMPLATE);
         req.setResultValues(makeResultValueString(CollectionHelper.list(TIME1, TIME2, TIME3),
                 CollectionHelper.list(VAL1, VAL2, VAL3)));
-        InsertResultResponse resp = insertResultDAO.insertResult(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertResultResponse resp = insertResultDAO.insertResult(req, requestOperatorContext);
         SosEventBus.fire(new ResultInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
 
@@ -654,7 +667,11 @@ public class InsertDAOTest extends HibernateTestCase {
         obs.setValue(obsVal);
         req.setObservation(Lists.newArrayList(obs));
         obs.addParameter(createSamplingGeometry());
-        InsertObservationResponse resp = insertObservationDAO.insertObservation(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertObservationResponse resp = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
         checkSamplingGeometry(OFFERING1, PROCEDURE3, OBSPROP3, FEATURE3, OBS_TIME_SP);
@@ -709,7 +726,11 @@ public class InsertDAOTest extends HibernateTestCase {
         obs.setValue(obsVal);
         req.setObservation(Lists.newArrayList(obs));
         addParameter(obs);
-        InsertObservationResponse resp = insertObservationDAO.insertObservation(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertObservationResponse resp = insertObservationDAO.insertObservation(req,requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
         checkOmParameter(OFFERING1, PROCEDURE3, OBSPROP3, FEATURE3, OBS_TIME_PARAM);
@@ -777,7 +798,11 @@ public class InsertDAOTest extends HibernateTestCase {
         obs.setValue(obsVal);
         req.setObservation(Lists.newArrayList(obs));
         obs.addParameter(createHeight(HEIGHT_DEPTH_VALUE));
-        InsertObservationResponse resp = insertObservationDAO.insertObservation(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertObservationResponse resp = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
         checkHeightParameter(OFFERING1, PROCEDURE3, OBSPROP3, FEATURE3, OBS_TIME_HEIGHT);
@@ -822,7 +847,11 @@ public class InsertDAOTest extends HibernateTestCase {
         obs.setValue(obsVal);
         req.setObservation(Lists.newArrayList(obs));
         obs.addParameter(createDepth(HEIGHT_DEPTH_VALUE));
-        InsertObservationResponse resp = insertObservationDAO.insertObservation(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertObservationResponse resp = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
         checkDepthParameter(OFFERING1, PROCEDURE3, OBSPROP3, FEATURE3, OBS_TIME_DEPTH);
@@ -866,10 +895,14 @@ public class InsertDAOTest extends HibernateTestCase {
         obsVal.setValue(new QuantityValue(Double.valueOf(OBS_VAL), TEMP_UNIT));
         obs.setValue(obsVal);
         req.setObservation(Lists.newArrayList(obs));
-        InsertObservationResponse resp = insertObservationDAO.insertObservation(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertObservationResponse resp = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
-        InsertObservationResponse resp2 = insertObservationDAO.insertObservation(req);
+        InsertObservationResponse resp2 = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp2));
         assertInsertionAftermathBeforeAndAfterCacheReload();
     }
@@ -894,10 +927,14 @@ public class InsertDAOTest extends HibernateTestCase {
         obs.setValue(obsVal);
         req.setObservation(Lists.newArrayList(obs));
         obs.addParameter(createDepth(HEIGHT_DEPTH_VALUE));
-        InsertObservationResponse resp = insertObservationDAO.insertObservation(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertObservationResponse resp = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
-        InsertObservationResponse resp2 = insertObservationDAO.insertObservation(req);
+        InsertObservationResponse resp2 = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp2));
         assertInsertionAftermathBeforeAndAfterCacheReload();
     }
@@ -921,10 +958,14 @@ public class InsertDAOTest extends HibernateTestCase {
         obs.setValue(obsVal);
         req.setObservation(Lists.newArrayList(obs));
         obs.addParameter(createHeight(HEIGHT_DEPTH_VALUE));
-        InsertObservationResponse resp = insertObservationDAO.insertObservation(req);
+        
+        RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
+        requestOperatorContext.setServiceRequest(req);
+        
+        InsertObservationResponse resp = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp));
         assertInsertionAftermathBeforeAndAfterCacheReload();
-        InsertObservationResponse resp2 = insertObservationDAO.insertObservation(req);
+        InsertObservationResponse resp2 = insertObservationDAO.insertObservation(req, requestOperatorContext);
         SosEventBus.fire(new ObservationInsertion(req, resp2));
         assertInsertionAftermathBeforeAndAfterCacheReload();
     }
