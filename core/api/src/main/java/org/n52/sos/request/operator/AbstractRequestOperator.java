@@ -57,6 +57,7 @@ import org.n52.sos.exception.ows.concrete.InvalidValueReferenceException;
 import org.n52.sos.exception.ows.concrete.MissingProcedureParameterException;
 import org.n52.sos.exception.ows.concrete.MissingServiceParameterException;
 import org.n52.sos.exception.ows.concrete.MissingValueReferenceException;
+import org.n52.sos.extensions.VirtualCapabilitiesExtensionRepository;
 import org.n52.sos.ogc.filter.SpatialFilter;
 import org.n52.sos.ogc.filter.TemporalFilter;
 import org.n52.sos.ogc.gml.time.TimePeriod;
@@ -171,6 +172,7 @@ public abstract class AbstractRequestOperator<D extends OperationDAO, Q extends 
             Q request = requestType.cast(abstractRequest);
             
             ContentCache contentCache = Configurator.getInstance().getCache();
+            contentCache = VirtualCapabilitiesExtensionRepository.getInstance().injectVirtualCapabilities(contentCache, request); //-> Override database ContentCache?
             
             RequestOperatorContext requestOperatorContext = new RequestOperatorContext();
             requestOperatorContext.setServiceRequest(request);
@@ -179,6 +181,7 @@ public abstract class AbstractRequestOperator<D extends OperationDAO, Q extends 
             checkForModifierAndProcess(request);
             checkParameters(request, requestOperatorContext);
             A response = receive(request, requestOperatorContext);
+            VirtualCapabilitiesExtensionRepository.getInstance().injectVirtualResponse(response, contentCache, request);
             SosEventBus.fire(new ResponseEvent(response));
             return checkForModifierAndProcess(request, response);
         } else {
