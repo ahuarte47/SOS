@@ -7,7 +7,7 @@
       <groupingSosObjectsByFeatureType>true</groupingSosObjectsByFeatureType>
       
       <databaseDriverClass>com.microsoft.sqlserver.jdbc.SQLServerDriver</databaseDriverClass>
-      <databaseConnectionUrl>jdbc:sqlserver://xxx.xxx.xxx.xxx:1433;DatabaseName=Runtime;user=myuser;Password=mypwd</databaseConnectionUrl>
+      <databaseConnectionUrl>jdbc:sqlserver://172.30.183.141:1433;DatabaseName=Runtime;user=sa;Password=123456789</databaseConnectionUrl>
       <timeZone>CET</timeZone>
       <featureStoreUrl>wonderware/Caudalimetros_SCADA.shp</featureStoreUrl>
       <featureKey>SCADA</featureKey>
@@ -32,7 +32,7 @@
       <groupingSosObjectsByFeatureType>true</groupingSosObjectsByFeatureType>
       
       <databaseDriverClass>com.microsoft.sqlserver.jdbc.SQLServerDriver</databaseDriverClass>
-      <databaseConnectionUrl>jdbc:sqlserver://xxx.xxx.xxx.xxx:1433;DatabaseName=Runtime;user=myuser;Password=mypwd</databaseConnectionUrl>
+      <databaseConnectionUrl>jdbc:sqlserver://172.30.183.141:1433;DatabaseName=Runtime;user=sa;Password=123456789</databaseConnectionUrl>
       <timeZone>CET</timeZone>
       <featureStoreUrl>wonderware/Clorimetros_SCADA.shp</featureStoreUrl>
       <featureKey>SCADA</featureKey>
