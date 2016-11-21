@@ -18,4 +18,12 @@
         <module>related-offering</module>
         <module>dynamic-modeling</module>
     </modules>
+    <profiles>
+        <profile>
+          <id>hydrology</id>
+          <modules>
+            <module>dynamic-modeling</module>
+          </modules>
+        </profile>
+    </profiles>
 </project>
