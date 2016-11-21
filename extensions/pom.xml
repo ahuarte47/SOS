@@ -16,5 +16,6 @@
         <module>do</module>
         <module>inspire</module>
         <module>related-offering</module>
+        <module>dynamic-modeling</module>
     </modules>
 </project>
