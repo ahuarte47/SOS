@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<config>  
+  <models>
+    <model class="org.n52.sos.extensions.wonderware.SimpleFeatureModel">
+      <name>MCP_SCADA_QA</name>
+      <description>Caudalímetros registrados en el Wonderware de MCP.</description>
+      <groupingSosObjectsByFeatureType>true</groupingSosObjectsByFeatureType>
+      
+      <databaseDriverClass>com.microsoft.sqlserver.jdbc.SQLServerDriver</databaseDriverClass>
+      <databaseConnectionUrl>jdbc:sqlserver://xxx.xxx.xxx.xxx:1433;DatabaseName=Runtime;user=myuser;Password=mypwd</databaseConnectionUrl>
+      <timeZone>CET</timeZone>
+      <featureStoreUrl>wonderware/Caudalimetros_SCADA.shp</featureStoreUrl>
+      <featureKey>SCADA</featureKey>
+      
+      <attributes>
+        <attribute>
+          <attributeName>flow</attributeName>
+          <fieldId>SCADA</fieldId>
+          <timeFrom>2011-06-01 00:00:00</timeFrom>
+          <timeTo>now</timeTo>
+          <stepTime>300000</stepTime>
+          <RetrievalMode>Cyclic</RetrievalMode>
+          <RetrievalAlignment>EndDateAligned</RetrievalAlignment>
+          <maximumCycleCount>865</maximumCycleCount>
+        </attribute>
+      </attributes>      
+    </model>
+    
+    <model class="org.n52.sos.extensions.wonderware.SimpleFeatureModel">
+      <name>MCP_SCADA_CL</name>
+      <description>Clorímetros registrados en el Wonderware de MCP.</description>
+      <groupingSosObjectsByFeatureType>true</groupingSosObjectsByFeatureType>
+      
+      <databaseDriverClass>com.microsoft.sqlserver.jdbc.SQLServerDriver</databaseDriverClass>
+      <databaseConnectionUrl>jdbc:sqlserver://xxx.xxx.xxx.xxx:1433;DatabaseName=Runtime;user=myuser;Password=mypwd</databaseConnectionUrl>
+      <timeZone>CET</timeZone>
+      <featureStoreUrl>wonderware/Clorimetros_SCADA.shp</featureStoreUrl>
+      <featureKey>SCADA</featureKey>
+      
+      <attributes>
+        <attribute>
+          <attributeName>chlorine</attributeName>
+          <fieldId>SCADA</fieldId>
+          <timeFrom>2011-06-01 00:00:00</timeFrom>
+          <timeTo>now</timeTo>
+          <stepTime>300000</stepTime>
+          <RetrievalMode>Cyclic</RetrievalMode>
+          <RetrievalAlignment>EndDateAligned</RetrievalAlignment>
+          <maximumCycleCount>865</maximumCycleCount>
+        </attribute>
+      </attributes>
+    </model>
+  </models>
+</config>
