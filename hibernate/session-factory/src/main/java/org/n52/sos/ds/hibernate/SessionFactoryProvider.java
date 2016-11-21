@@ -50,6 +50,7 @@ import org.hibernate.tool.hbm2ddl.SchemaUpdateScript;
 import org.n52.sos.ds.ConnectionProviderException;
 import org.n52.sos.ds.HibernateDatasourceConstants;
 import org.n52.sos.exception.ConfigurationException;
+import org.n52.sos.service.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,6 +122,12 @@ public class SessionFactoryProvider extends UnspecifiedSessionFactoryProvider {
                                 throw new ConfigurationException("Unable to encode directory URL " + dirUrl + "!");
                             }
                         }
+                    }
+                    if (!hibernateDir.exists()) {
+                        Configurator configurator = Configurator.getInstance();
+                        String webinfPath = configurator.getWebInfPath();
+                        File hibernateTmp = new File(webinfPath + "classes", directory);
+                        if (hibernateTmp.exists()) hibernateDir = hibernateTmp;
                     }
                     if (!hibernateDir.exists()) {
                         throw new ConfigurationException("Hibernate directory " + directory + " doesn't exist!");

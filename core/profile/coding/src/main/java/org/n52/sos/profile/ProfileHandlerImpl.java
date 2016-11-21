@@ -43,6 +43,7 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.xmlbeans.XmlObject;
 import org.n52.sos.exception.ConfigurationException;
 import org.n52.sos.ogc.ows.OwsExceptionReport;
+import org.n52.sos.service.Configurator;
 import org.n52.sos.service.profile.DefaultProfile;
 import org.n52.sos.service.profile.Profile;
 import org.n52.sos.service.profile.ProfileHandler;
@@ -112,7 +113,13 @@ public class ProfileHandlerImpl implements ProfileHandler {
     private Collection<File> loadFiles() {
         IOFileFilter fileFilter = new WildcardFileFilter("*-profile.xml");
         File folder = FileUtils.toFile(ProfileHandlerImpl.class.getResource("/"));
-        return FileUtils.listFiles(folder, fileFilter, DirectoryFileFilter.DIRECTORY);
+        Collection<File> listFiles = FileUtils.listFiles(folder, fileFilter, DirectoryFileFilter.DIRECTORY);
+        
+        if (listFiles.isEmpty()) {
+            Configurator configurator = Configurator.getInstance();
+            listFiles = FileUtils.listFiles(new File(configurator.getWebInfPath()), fileFilter, DirectoryFileFilter.DIRECTORY);
+        }
+        return listFiles;
     }
     
 

@@ -30,6 +30,7 @@ package org.n52.sos.service;
 
 import static org.n52.sos.util.ConfiguringSingletonServiceLoader.loadAndConfigure;
 
+import java.io.File;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
@@ -387,6 +388,16 @@ public class Configurator implements Cleanupable {
         return basepath;
     }
 
+    /**
+     * @return the WEB-INF path of the application
+     */
+    public String getWebInfPath() {
+        String webinfPath = getBasePath();
+        if (!webinfPath.endsWith(File.separator)) webinfPath += File.separator;
+        webinfPath += "WEB-INF" + File.separator;
+        return webinfPath;
+    }
+    
     /**
      * @return the current contentCacheController
      */
