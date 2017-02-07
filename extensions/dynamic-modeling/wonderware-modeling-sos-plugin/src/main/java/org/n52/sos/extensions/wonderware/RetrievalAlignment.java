@@ -35,5 +35,5 @@ package org.n52.sos.extensions.wonderware;
  */
 enum RetrievalAlignment 
 {
-    StartDateAligned, EndDateAligned, Full
+    StartDateAligned, EndDateAligned, Full, ClampMaximum
 }

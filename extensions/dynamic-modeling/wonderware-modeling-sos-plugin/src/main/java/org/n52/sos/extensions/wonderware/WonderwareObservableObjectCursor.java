@@ -110,7 +110,7 @@ class WonderwareObservableObjectCursor extends WonderwareObservableDataCursor<Ob
                 AbstractModel abstractModel = (AbstractModel)currentModel;
                 abstractModel.populateRelatedFeatureUrls(theObject);
             }
-            return theObject.attributes.size()>0 ? theObject : null;
+            return theObject;
         }
         catch (SQLException e) 
         {

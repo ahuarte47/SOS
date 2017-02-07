@@ -20,7 +20,7 @@
           <timeTo>now</timeTo>
           <stepTime>300000</stepTime>
           <RetrievalMode>Cyclic</RetrievalMode>
-          <RetrievalAlignment>EndDateAligned</RetrievalAlignment>
+          <RetrievalAlignment>ClampMaximum</RetrievalAlignment>
           <maximumCycleCount>865</maximumCycleCount>
         </attribute>
       </attributes>      
@@ -45,7 +45,7 @@
           <timeTo>now</timeTo>
           <stepTime>300000</stepTime>
           <RetrievalMode>Cyclic</RetrievalMode>
-          <RetrievalAlignment>EndDateAligned</RetrievalAlignment>
+          <RetrievalAlignment>ClampMaximum</RetrievalAlignment>
           <maximumCycleCount>865</maximumCycleCount>
         </attribute>
       </attributes>

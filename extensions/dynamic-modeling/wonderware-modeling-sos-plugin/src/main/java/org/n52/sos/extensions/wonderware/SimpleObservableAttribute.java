@@ -77,7 +77,11 @@ class SimpleObservableAttribute extends ObservableAttribute
         long queryCycleCount = 1 + (finalTime.getMillis() - startTime.getMillis()) / stepTime;
         long maximCycleCount = maximumCycleCount>0 ? maximumCycleCount : MAXIMUM_CYCLE_COUNT;
         
-        // Calculate a limited cycle count to avoid very long queries from the current TimePeriod.                        
+        // Calculate a limited cycle count to avoid very long queries from the current TimePeriod.
+        if (retrievalAlignment==RetrievalAlignment.ClampMaximum && queryCycleCount>maximCycleCount)
+        {
+            queryCycleCount = maximCycleCount;
+        }
         if (retrievalAlignment!=RetrievalAlignment.Full && queryCycleCount>maximCycleCount)
         {
             queryCycleCount = maximCycleCount;
