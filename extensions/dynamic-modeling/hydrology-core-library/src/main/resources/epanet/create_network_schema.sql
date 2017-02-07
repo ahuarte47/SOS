@@ -83,7 +83,7 @@ CREATE TABLE epanet_report_node
   quality REAL 
 );
 
-CREATE INDEX epanet_report_node_object_id_index ON epanet_report_node (object_id);
+-- CREATE INDEX epanet_report_node_object_id_index ON epanet_report_node (object_id);
 
 -- ------------------------------------------------------------------------------
 -- Table structure for report arc
@@ -101,7 +101,7 @@ CREATE TABLE epanet_report_arc
   status INT
 );
 
-CREATE INDEX epanet_report_arc_object_id_index ON epanet_report_arc (object_id);
+-- CREATE INDEX epanet_report_arc_object_id_index ON epanet_report_arc (object_id);
 
 -- ------------------------------------------------------------------------------
 -- Table structure for units

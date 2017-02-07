@@ -68,8 +68,13 @@ import org.n52.sos.extensions.util.FileUtils;
  */
 public class EpanetDatabaseComposer
 {
-    /** Default SQL schema database. */
-    private static final String DEFAULT_SQL_SCHEMA_FILENAME = "epanet/create_network_schema.sql";
+    /** LOGGER to write writing progress feedback. */
+    private static final Logger LOG = Logger.getLogger(org.n52.sos.extensions.hydrology.epanet.EpanetModel.class.toString());
+    
+    /** Default SQL schema database creation. */
+    private static final String DEFAULT_SQL_CREATE_SCHEMA_FILENAME = "epanet/create_network_schema.sql";
+    /** Default SQL schema database ending. */
+    private static final String DEFAULT_SQL_FINISH_SCHEMA_FILENAME = "epanet/finish_network_schema.sql";
     
     /** TableName of the network node objects. */
     public static final String NODE_TABLENAME = "epanet_node";
@@ -513,11 +518,25 @@ public class EpanetDatabaseComposer
     }
     
     /**
-     * Fill the schema table of the specified database connection.
+     * Create the schema table of the specified database connection.
      */
     public static boolean createSchemaDatabase(Connection connection) throws RuntimeException
     {
-        java.net.URI schemaFile = FileUtils.resolveAbsoluteURI(DEFAULT_SQL_SCHEMA_FILENAME, EpanetDatabaseComposer.class.getClassLoader());
+        return executeSqlCommandDatabase(connection, DEFAULT_SQL_CREATE_SCHEMA_FILENAME);
+    }
+    /**
+     * Finish the schema table of the specified database connection.
+     */
+    public static boolean finishSchemaDatabase(Connection connection) throws RuntimeException
+    {
+        return executeSqlCommandDatabase(connection, DEFAULT_SQL_FINISH_SCHEMA_FILENAME);
+    }
+    /**
+     * Execute the SQL-command file to the specified database connection.
+     */
+    private static boolean executeSqlCommandDatabase(Connection connection, String sqlCommandFileName) throws RuntimeException
+    {
+        java.net.URI schemaFile = FileUtils.resolveAbsoluteURI(sqlCommandFileName, EpanetDatabaseComposer.class.getClassLoader());
         
         BufferedReader inputReader = null;
         InputStream inputStream = null;
@@ -575,8 +594,13 @@ public class EpanetDatabaseComposer
         
         try
         {
+            LOG.info("Starting simulation of EPANET model...");
+            
             EpanetHydraulicQualitySim hydraulicSim = new EpanetHydraulicQualitySim(network, log);
             hydraulicSim.simulate(hydraulicFile);
+            
+            LOG.info("Simulation of EPANET model finished!");
+            LOG.info("Starting writing of network database to disk...");
             
             // Check the target DateTimes to solve.
             if (targetTimes!=null && targetTimes.size()>0) 
@@ -591,13 +615,25 @@ public class EpanetDatabaseComposer
             }
             composeUnitsOfMeasures(network, connection);
             
+            LOG.info("... writing nodes and links of network database.");
+            
             if (writeNetwork)
             {
                 composeNodes(network, connection);
                 composeLinks(network, connection);
             }
+            LOG.info("... writing report data of network database.");
+            
             hydraulicReader = new HydraulicReader(new RandomAccessFile(hydraulicFile, "r"));
             composeReportObjects(network, connection, hydraulicReader, targetTimes, log);
+            
+            LOG.info("... writing final schema (indices and so on) of network database.");
+            
+            // Finish database schema.            
+            connection.commit();
+            EpanetDatabaseComposer.finishSchemaDatabase(connection);
+            
+            LOG.info("Writing of network database to disk finished!");
             
             return true;
         }

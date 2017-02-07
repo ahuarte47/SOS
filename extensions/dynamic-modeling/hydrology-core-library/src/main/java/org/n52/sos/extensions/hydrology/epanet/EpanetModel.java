@@ -62,7 +62,7 @@ import com.vividsolutions.jts.io.WKTReader;
  */
 public class EpanetModel extends AbstractModel
 {
-    private static final Logger LOG = Logger.getLogger(EpanetModel.class.toString());    
+    private static final Logger LOG = Logger.getLogger(EpanetModel.class.toString());
     
     /** Default seed database as target of Network structures. */
     private static final String DEFAULT_SQLITE_SEED_DATABASE_FILE = "epanet/sqlite.template.db";
