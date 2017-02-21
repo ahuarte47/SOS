@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.joda.time.DateTimeZone;
+import org.n52.sos.extensions.ObservableModel;
 import org.n52.sos.extensions.ObservableObject;
 import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
@@ -51,7 +52,21 @@ public abstract class AbstractModel implements Model
     protected String description = "";
     protected List<String> relatedFeatureExpressions = new ArrayList<String>();
     protected DateTimeZone timeZone = DateTimeZone.UTC;
-    protected boolean groupingSosObjectsByFeatureType = false;
+    protected int capabilitiesFlags = ObservableModel.NONE_FLAGS;
+    protected ModelManager modelManager = null;
+    
+    /**
+     * Copy the settings of this model from the specified source object.
+     */
+    public void CopySettings(AbstractModel model)
+    {
+        this.name = model.name;
+        this.description = model.description;
+        this.relatedFeatureExpressions.addAll(model.relatedFeatureExpressions);
+        this.timeZone = model.timeZone != null ? DateTimeZone.forID(model.timeZone.getID()) : DateTimeZone.UTC;
+        this.capabilitiesFlags = model.capabilitiesFlags;
+        this.modelManager = model.modelManager;
+    }
     
     /** Gets the name of this model. */
     @Override
@@ -71,20 +86,25 @@ public abstract class AbstractModel implements Model
     {
         return timeZone;
     }
-    /** Gets whether the SOS objects must be grouped by feature type. */
-    @Override 
-    public boolean groupingSosObjectsByFeatureType()
+    /**
+     * Gets the capabilities flags of this data model.
+     */
+    @Override
+    public int capabilitiesFlags()
     {
-        return groupingSosObjectsByFeatureType;
+        return capabilitiesFlags;
     }
     
     /**
      * Load the configuration data from the specified settings entry. 
      */
     @Override
-    public boolean loadSettings(String settingsFileName, org.w3c.dom.Element rootEntry, org.w3c.dom.Element modelEntry)
+    public boolean loadSettings(ModelManager modelManager, String settingsFileName, org.w3c.dom.Element rootEntry, org.w3c.dom.Element modelEntry)
     {
         NodeList nodeList = modelEntry.getChildNodes();
+        
+        capabilitiesFlags = ObservableModel.NONE_FLAGS;
+        this.modelManager = modelManager;
         
         for (int i = 0, icount = nodeList.getLength(); i < icount; i++)
         {
@@ -110,7 +130,13 @@ public abstract class AbstractModel implements Model
             if (nodeName.equalsIgnoreCase("groupingSosObjectsByFeatureType"))
             {
                 String tempText = node.getTextContent();
-                if (!com.google.common.base.Strings.isNullOrEmpty(tempText)) groupingSosObjectsByFeatureType = Boolean.parseBoolean(tempText);
+                if (!com.google.common.base.Strings.isNullOrEmpty(tempText) && Boolean.parseBoolean(tempText)) capabilitiesFlags |= ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG;
+            }
+            else
+            if (nodeName.equalsIgnoreCase("capabilitiesFlags"))
+            {
+                String tempText = node.getTextContent();
+                if (!com.google.common.base.Strings.isNullOrEmpty(tempText)) capabilitiesFlags |= Integer.parseInt(tempText);
             }
             else
             if (nodeName.equalsIgnoreCase("relatedFeatureExpression"))

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <config>
+  <smtpHostServer>smtp.webtracasa.local</smtpHostServer>
   <defaultValidTime></defaultValidTime>
   <models>
     <model class="org.n52.sos.extensions.hydrology.epanet.EpanetModel">

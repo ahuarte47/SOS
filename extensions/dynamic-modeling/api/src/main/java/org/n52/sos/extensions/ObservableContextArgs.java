@@ -46,9 +46,12 @@ import com.vividsolutions.jts.geom.Geometry;
 import org.n52.sos.ogc.filter.SpatialFilter;
 import org.n52.sos.ogc.filter.TemporalFilter;
 import org.n52.sos.ogc.filter.FilterConstants.TimeOperator;
+import org.n52.sos.ogc.gml.AbstractFeature;
 import org.n52.sos.ogc.gml.time.Time;
 import org.n52.sos.ogc.gml.time.TimeInstant;
 import org.n52.sos.ogc.gml.time.TimePeriod;
+import org.n52.sos.ogc.om.OmObservation;
+import org.n52.sos.ogc.om.OmObservationConstellation;
 import org.n52.sos.ogc.sos.SosConstants;
 import org.n52.sos.request.AbstractServiceRequest;
 import org.n52.sos.request.DescribeSensorRequest;
@@ -56,6 +59,7 @@ import org.n52.sos.request.GetCapabilitiesRequest;
 import org.n52.sos.request.GetFeatureOfInterestRequest;
 import org.n52.sos.request.GetObservationByIdRequest;
 import org.n52.sos.request.GetObservationRequest;
+import org.n52.sos.request.InsertObservationRequest;
 
 /**
  * Information context of a SOS request to fetch observable objects.
@@ -152,6 +156,17 @@ public class ObservableContextArgs {
         TimePeriod timePeriod = new TimePeriod(ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG, ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG);
         
         // ----------------------------------------------------------------------------------------------------
+        // Private model ? Should We hide the data of this model ?
+        
+        if ((dynamicModel.capabilitiesFlags() & ObservableModel.USER_DEFINED_FLAG) == ObservableModel.USER_DEFINED_FLAG)
+        {
+            if (request instanceof GetCapabilitiesRequest)
+            {
+                return false;
+            }
+        }
+        
+        // ----------------------------------------------------------------------------------------------------
         // Extract the source data filters of the requested ServiceRequest.
         
         java.util.Map.Entry<String,Boolean> idf = extractIdentifiers(dynamicModel, request);
@@ -223,7 +238,7 @@ public class ObservableContextArgs {
     {
         Map<String,String> identifiersMap = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER);
         List<String> identifiersList = new ArrayList<String>();
-        boolean groupingObjects = dynamicModel.groupingSosObjectsByFeatureType();
+        boolean groupingObjects = (dynamicModel.capabilitiesFlags() & ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG) == ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG;
         
         // Parse when available the source filter identifiers of requested objects.
         if (request instanceof GetFeatureOfInterestRequest)
@@ -295,6 +310,18 @@ public class ObservableContextArgs {
             return new AbstractMap.SimpleEntry<String,Boolean>(ObservableObject.UNDEFINED_OBJECT_ID_FLAG, false);
         }
         else
+        if (request instanceof InsertObservationRequest)
+        {
+            InsertObservationRequest theRequest = (InsertObservationRequest)request;
+            
+            for (OmObservation observation : theRequest.getObservations())
+            {
+                OmObservationConstellation observationConstellation = observation.getObservationConstellation();
+                AbstractFeature featureO = observationConstellation.getFeatureOfInterest();
+                if (featureO != null && featureO.isSetIdentifier()) extractIdentifiers(Collections.singletonList(featureO.getIdentifier()), identifiersMap, identifiersList);
+            }
+        }
+        else
         {
             return new AbstractMap.SimpleEntry<String,Boolean>(ObservableObject.UNDEFINED_OBJECT_ID_FLAG, true);
         }
@@ -333,7 +360,7 @@ public class ObservableContextArgs {
     {
         Map<String,String> identifiersMap = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER);
         List<String> identifiersList = new ArrayList<String>();
-        boolean groupingObjects = dynamicModel.groupingSosObjectsByFeatureType();
+        boolean groupingObjects = (dynamicModel.capabilitiesFlags() & ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG) == ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG;
         
         if (!groupingObjects)
         {
@@ -390,6 +417,12 @@ public class ObservableContextArgs {
             }
             if (!contentNeeded)
             return new AbstractMap.SimpleEntry<String,Boolean>(ObservableObject.UNDEFINED_OBJECT_ID_FLAG, false);
+        }
+        else
+        if (request instanceof InsertObservationRequest)
+        {
+            InsertObservationRequest theRequest = (InsertObservationRequest)request;
+            extractIdentifiers(theRequest.getOfferings(), identifiersMap, identifiersList);
         }
         else
         {

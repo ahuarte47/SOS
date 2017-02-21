@@ -29,6 +29,7 @@
 package org.n52.sos.extensions;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +37,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
 import org.joda.time.DateTime;
 
@@ -46,34 +49,44 @@ import org.n52.sos.exception.ows.concrete.UnsupportedOperatorException;
 import org.n52.sos.i18n.MultilingualString;
 import org.n52.sos.ogc.filter.FilterConstants.SpatialOperator;
 import org.n52.sos.ogc.filter.SpatialFilter;
+import org.n52.sos.ogc.gml.AbstractFeature;
 import org.n52.sos.ogc.gml.time.Time.TimeIndeterminateValue;
 import org.n52.sos.ogc.gml.time.TimeInstant;
+import org.n52.sos.ogc.om.NamedValue;
 import org.n52.sos.ogc.om.ObservationValue;
 import org.n52.sos.ogc.om.OmConstants;
 import org.n52.sos.ogc.om.OmObservableProperty;
 import org.n52.sos.ogc.om.OmObservation;
 import org.n52.sos.ogc.om.OmObservationConstellation;
+import org.n52.sos.ogc.om.SingleObservationValue;
 import org.n52.sos.ogc.om.features.FeatureCollection;
 import org.n52.sos.ogc.om.features.SfConstants;
 import org.n52.sos.ogc.om.features.samplingFeatures.SamplingFeature;
+import org.n52.sos.ogc.om.values.Value;
 import org.n52.sos.ogc.sensorML.SensorML20Constants;
 import org.n52.sos.ogc.sensorML.SensorMLConstants;
 import org.n52.sos.ogc.sos.SosEnvelope;
 import org.n52.sos.ogc.sos.SosProcedureDescription;
+import org.n52.sos.ogc.swe.SweDataRecord;
+import org.n52.sos.ogc.swe.SweField;
+import org.n52.sos.ogc.swe.simpleType.SweAbstractSimpleType;
 import org.n52.sos.request.AbstractServiceRequest;
 import org.n52.sos.request.DescribeSensorRequest;
 import org.n52.sos.request.GetObservationByIdRequest;
 import org.n52.sos.request.GetObservationRequest;
+import org.n52.sos.request.InsertObservationRequest;
 import org.n52.sos.response.AbstractObservationResponse;
 import org.n52.sos.response.AbstractServiceResponse;
 import org.n52.sos.response.DescribeSensorResponse;
 import org.n52.sos.response.GetFeatureOfInterestResponse;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.geometry.BoundingBox;
 import org.opengis.referencing.FactoryException;
 
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
 
 /**
  * WritableCache that integrates the capabilities of dynamic models in a SOS service.
@@ -317,9 +330,13 @@ public class DynamicWritableCache extends InMemoryCacheImpl
             return;
         
         // Grouping by FeatureType ?
-        boolean groupingObjects = dynamicModel.groupingSosObjectsByFeatureType();        
+        boolean groupingObjects = (dynamicModel.capabilitiesFlags() & ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG) == ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG;        
         Map<String,String> offeringsMap = groupingObjects ? new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER) : null;
         boolean creatingNewOffering = false;
+        
+        // Injecting virtual feature/attributes/observations ?
+        boolean creatingVrtFeatures = (request instanceof InsertObservationRequest);
+        Map<String,ObservableObject> objectsMap = creatingVrtFeatures ? new TreeMap<String,ObservableObject>(String.CASE_INSENSITIVE_ORDER) : null;
         
         Set<String> formats = getRequestableProcedureDescriptionFormat();
         if (!formats.contains(SensorMLConstants.NS_SML)) getRequestableProcedureDescriptionFormat().add(SensorMLConstants.NS_SML);   
@@ -360,6 +377,12 @@ public class DynamicWritableCache extends InMemoryCacheImpl
                 addProcedureForOffering(offering, procedure);
                 addProcedureDescriptionFormatsForProcedure(procedure, formats);
                 creatingNewOffering = true;
+            }
+            
+            // Injecting virtual feature/attributes/observations ?
+            if (creatingVrtFeatures && objectsMap.get(theObject.objectName) == null)
+            {
+                objectsMap.put(theObject.objectName, theObject);
             }
             
             DateTime minObsOfferingTime = !creatingNewOffering ? getMinPhenomenonTimeForOffering(offering) : null;
@@ -462,6 +485,21 @@ public class DynamicWritableCache extends InMemoryCacheImpl
             }
         }
         
+        // Injecting virtual feature/attributes/observations ?
+        if (creatingVrtFeatures)
+        {
+            try
+            {
+                editObservationDataOfDynamicModel(dynamicModel, objectsMap, (InsertObservationRequest)request, observableContextArgs);
+            }
+            catch (RuntimeException e)
+            {
+                throw new VirtualCapabilitiesException(e);
+            }
+            objectsMap.clear();
+            objectsMap = null;
+        }
+        
         // Clear temporal grouping data.
         if (groupingObjects)
         {
@@ -535,7 +573,7 @@ public class DynamicWritableCache extends InMemoryCacheImpl
             return false;
         
         // Grouping by FeatureType ?
-        boolean groupingObjects = dynamicModel.groupingSosObjectsByFeatureType();        
+        boolean groupingObjects = (dynamicModel.capabilitiesFlags() & ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG) == ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG;        
         Map<String,SosProcedureDescription> procedureMap = groupingObjects ? new TreeMap<String,SosProcedureDescription>(String.CASE_INSENSITIVE_ORDER) : null;
         
         // ----------------------------------------------------------------------------------------------------
@@ -754,5 +792,145 @@ public class DynamicWritableCache extends InMemoryCacheImpl
             return injectObservationResponseDataOfDynamicModel(response, dynamicModel, request);
         }
         return false;
+    }
+    
+    /**
+     * Edit the virtual objects managed by this extension and required for the specified request.
+     */
+    private boolean editObservationDataOfDynamicModel(ObservableModel dynamicModel, Map<String,ObservableObject> objectsMap, InsertObservationRequest request, ObservableContextArgs observableContextArgs) throws RuntimeException
+    {
+        List<OmObservation> observationList = request.getObservations();
+        
+        Collection<NamedValue<?>> operationContextArgs = null;
+        boolean resultOp = false;
+        
+        // Parse input data.
+        for (String objectName : observableContextArgs.objectId.split(","))
+        {
+            ObservableObject theObject = objectsMap.get(objectName);
+            int index = 0;
+            
+            List<Object[]> attributeList = new ArrayList<Object[]>();
+            Geometry geometry = null;
+            
+            OmObservation theObservation = null;
+            SosProcedureDescription theProcedure = null;
+            AbstractFeature theFeature = null;
+            
+            // Get the related observation, procedure and feature to extract and configure virtual attributes.
+            for (OmObservation observation : observationList)
+            {
+                OmObservationConstellation observationConstellation = observation.getObservationConstellation();
+                AbstractFeature featureO = observationConstellation.getFeatureOfInterest();
+                
+                if (featureO != null && featureO.isSetIdentifier())
+                {
+                    String feat_id = featureO.getIdentifier();
+                    int currentPos = feat_id.lastIndexOf('/');
+                    if (currentPos != -1) feat_id = feat_id.substring(currentPos + 1);
+                    
+                    if (objectName.equalsIgnoreCase(feat_id))
+                    {
+                        theObservation = observation;
+                        theProcedure = observationConstellation.getProcedure();
+                        theFeature = featureO;
+                        observationList.remove(index);
+                        break;
+                    }
+                }
+                index++;
+            }
+            
+            // All OK ?
+            if (theObservation == null || theProcedure == null || theFeature == null)
+            {
+                continue;
+            }
+            if (theFeature instanceof SamplingFeature)
+            {
+                geometry = ((SamplingFeature)theFeature).getGeometry();
+            }
+            if (operationContextArgs == null)
+            {
+                operationContextArgs = theObservation.getParameter();
+            }
+            
+            // Do We must create a new virtual observable object ?
+            if (theObject == null)
+            {
+                theObject = new ObservableObject();
+                theObject.objectType  = "VIRTUAL_OBJECT";
+                theObject.objectName  = objectName;
+                theObject.description = "Virtual object from a InsertObservationRequest";
+                
+                String proc_ty = theProcedure.getIdentifier();
+                int currentPos = proc_ty.lastIndexOf('/');
+                if (currentPos != -1) proc_ty = proc_ty.substring(currentPos + 1);
+                theObject.objectType  = proc_ty;
+                
+                objectsMap.put(objectName, theObject);
+            }
+            
+            // We must update a set of virtual attributes, then we will inject it.
+            SimpleFeatureTypeBuilder featureTypeBuilder = new SimpleFeatureTypeBuilder();
+            featureTypeBuilder.setName(theObject.objectType);
+            if (geometry != null && geometry.getSRID() > 0) featureTypeBuilder.setSRS("EPSG:" + geometry.getSRID());
+            featureTypeBuilder.setDefaultGeometry("geometry");
+            
+            if (theObservation.getValue() instanceof SingleObservationValue)
+            {
+                SingleObservationValue<?> observationValue = (SingleObservationValue<?>)theObservation.getValue();
+                Value<?> data = observationValue.getValue();
+                
+                if (data.getValue() instanceof SweDataRecord)
+                {
+                    SweDataRecord dataRecord = (SweDataRecord)data.getValue();
+                    
+                    for (SweField field : dataRecord.getFields())
+                    {
+                        String name = field.getLabel();
+                        Object oval = field.getElement();
+                        
+                        if (oval != null && oval instanceof SweAbstractSimpleType<?> && (oval = ((SweAbstractSimpleType<?>)oval).getValue()) != null)
+                        {
+                            featureTypeBuilder.add(name, oval.getClass());
+                            attributeList.add(new Object[]{ name, oval });
+                        }
+                    }
+                }
+            }
+            featureTypeBuilder.add("geometry", geometry != null ? geometry.getClass() : Point.class);
+            
+            SimpleFeatureType featureType = featureTypeBuilder.buildFeatureType();
+            SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(featureType);
+            SimpleFeature feature = featureBuilder.buildFeature(objectName);
+            
+            for (Object[] attributeDef : attributeList)
+            {
+                feature.setAttribute((String)attributeDef[0], attributeDef[1]);
+            }
+            feature.setDefaultGeometry(geometry);
+            attributeList.clear();
+            
+            // The Feature contains the attributes to update in the data Model.
+            theObject.featureOfInterest = feature;
+        }
+        
+        // Process the created input operation.
+        if (objectsMap.size() > 0)
+        {
+            resultOp = true;
+            
+            if (dynamicModel instanceof ObservableUpdatableModel)
+            {
+                ObservableUpdatableModel updatableModel = (ObservableUpdatableModel)dynamicModel;
+                updatableModel.editObservableObjects(objectsMap.values(), operationContextArgs);
+            }
+            else
+            {
+                throw new RuntimeException(String.format("The model '%s' does not support edit operations", dynamicModel.getName()));
+            }
+        }
+        return resultOp;
     }
 }

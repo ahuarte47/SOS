@@ -328,7 +328,7 @@ abstract class EpanetObservableDataCursor<T> implements Iterator<T>
         theObject.objectName = recordset.getString(1);
         theObject.objectType = recordset.getString(2);
         
-        if (currentModel.groupingSosObjectsByFeatureType())
+        if ((currentModel.capabilitiesFlags() & ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG) == ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG)
         {
             theObject.description = "Hydraulic observable properties of objects of type '"+theObject.objectType+"'.";
         }

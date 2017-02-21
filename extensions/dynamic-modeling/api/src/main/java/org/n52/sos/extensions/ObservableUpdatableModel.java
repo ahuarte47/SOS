@@ -26,24 +26,27 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
  */
-package org.n52.sos.extensions.model;
+package org.n52.sos.extensions;
 
-import org.n52.sos.extensions.ObservableModel;
+import java.util.Collection;
+
+import org.n52.sos.ogc.om.NamedValue;
 
 /**
- * Defines a serializable data Model with Objects that provide Observable Attributes.
+ * Defines a generic data Model interface with Objects that provide Observable Attributes,
+ * and who also supports edit operations to create/update/delete information.
  * 
  * @author Alvaro Huarte <ahuarte@tracasa.es>
  */
-public interface Model extends ObservableModel
+public interface ObservableUpdatableModel extends ObservableModel
 {
     /**
-     * Load the configuration data from the specified settings entry.
+     * Create/Update/Delete the specified Observable Object collection in the data Model.
+     * 
+     * @param observableObjects: Object collection to update in the model.
+     * @param operationContextArgs: Parameter collection related to the edit operation.
+     * 
+     * @return true whether this operation runs OK.
      */
-    public boolean loadSettings(ModelManager modelManager, String settingsFileName, org.w3c.dom.Element rootEntry, org.w3c.dom.Element modelEntry);
-    
-    /**
-     * Prepare the data structure managed.
-     */
-    public boolean prepareObject() throws RuntimeException;
+    public boolean editObservableObjects(final Iterable<ObservableObject> observableObjects, final Collection<NamedValue<?>> operationContextArgs) throws RuntimeException;
 }

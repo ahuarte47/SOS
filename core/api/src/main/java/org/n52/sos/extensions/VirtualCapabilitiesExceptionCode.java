@@ -26,24 +26,27 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
  */
-package org.n52.sos.extensions.model;
+package org.n52.sos.extensions;
 
-import org.n52.sos.extensions.ObservableModel;
+import org.n52.sos.ogc.ows.ExceptionCode;
 
 /**
- * Defines a serializable data Model with Objects that provide Observable Attributes.
+ * Defines a specific VirtualCapabilities ExceptionCode class.
  * 
  * @author Alvaro Huarte <ahuarte@tracasa.es>
  */
-public interface Model extends ObservableModel
-{
-    /**
-     * Load the configuration data from the specified settings entry.
-     */
-    public boolean loadSettings(ModelManager modelManager, String settingsFileName, org.w3c.dom.Element rootEntry, org.w3c.dom.Element modelEntry);
+class VirtualCapabilitiesExceptionCode implements ExceptionCode {
     
     /**
-     * Prepare the data structure managed.
+     * Creates a new VirtualCapabilitiesExceptionCode object.
      */
-    public boolean prepareObject() throws RuntimeException;
+    public VirtualCapabilitiesExceptionCode(Throwable cause) {
+        this.cause = cause;
+    }
+    private Throwable cause;
+    
+    @Override
+    public String getSoapFaultReason() {
+        return this.cause.getMessage();
+    }
 }

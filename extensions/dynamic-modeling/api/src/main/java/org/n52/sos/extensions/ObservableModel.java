@@ -37,6 +37,13 @@ import org.joda.time.DateTimeZone;
  */
 public interface ObservableModel
 {
+    /** No flags */
+    public static final int NONE_FLAGS = 0;
+    /** Grouping-objects-by-feature-type flag (It indicates whether the SOS objects must be grouped by feature type) */
+    public static final int GROUPING_BY_FEATURE_TYPE_FLAG = 1;
+    /** User-defined flag (It indicates whether the Model is user-defined or private, it is ignored in GetCapabilities requests) */
+    public static final int USER_DEFINED_FLAG = 2;
+    
     /**
      * Get the name of this Model.
      */
@@ -53,9 +60,9 @@ public interface ObservableModel
     public DateTimeZone getTimeZone();
     
     /**
-     * Gets whether the SOS objects must be grouped by feature type. 
+     * Gets the capabilities flags of this Model.
      */
-    public boolean groupingSosObjectsByFeatureType();
+    public int capabilitiesFlags();
     
     /**
      * Enumerate the available Observable Object collection from the specified filter criteria.

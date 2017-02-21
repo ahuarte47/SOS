@@ -52,9 +52,11 @@ import org.joda.time.format.DateTimeFormatter;
 
 import org.n52.sos.extensions.MeasureSet;
 import org.n52.sos.extensions.ObservableContextArgs;
+import org.n52.sos.extensions.ObservableModel;
 import org.n52.sos.extensions.ObservableObject;
 import org.n52.sos.extensions.model.AbstractModel;
 import org.n52.sos.extensions.model.Model;
+import org.n52.sos.extensions.model.ModelManager;
 import org.n52.sos.extensions.util.FileUtils;
 
 /**
@@ -75,11 +77,11 @@ public class SimpleFeatureModel extends AbstractModel
      * Load the configuration data from the specified settings entry.
      */
     @Override
-    public boolean loadSettings(String settingsFileName, org.w3c.dom.Element rootEntry, org.w3c.dom.Element modelEntry)
+    public boolean loadSettings(ModelManager modelManager, String settingsFileName, org.w3c.dom.Element rootEntry, org.w3c.dom.Element modelEntry)
     {
         DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         
-        if (super.loadSettings(settingsFileName, rootEntry, modelEntry))
+        if (super.loadSettings(modelManager, settingsFileName, rootEntry, modelEntry))
         {
             NodeList nodeList = modelEntry.getChildNodes();
             if (timeZone!=null) dateTimeFormatter = dateTimeFormatter.withZone(timeZone);
@@ -210,7 +212,7 @@ public class SimpleFeatureModel extends AbstractModel
         String objectName = theObject.objectName;
         String objectType = theObject.objectType;
         
-        if (groupingSosObjectsByFeatureType())
+        if ((capabilitiesFlags & ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG) == ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG)
         {
             return "Historic and live observable properties of objects of type '"+objectType+"'.";
         }

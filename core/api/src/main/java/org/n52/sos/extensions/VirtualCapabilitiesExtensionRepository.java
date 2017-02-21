@@ -92,12 +92,15 @@ public class VirtualCapabilitiesExtensionRepository {
     /**
      * Returns a ContentCache adding the virtual capabilities managed by the registered VirtualExtension collection and required for the specified request.
      */
-    public ContentCache injectVirtualCapabilities(ContentCache contentCache, AbstractServiceRequest<?> request) {
+    public ContentCache injectVirtualCapabilities(ContentCache contentCache, AbstractServiceRequest<?> request) throws org.n52.sos.exception.CodedException {
         for (VirtualCapabilitiesExtension extension : virtualCapabilitiesExtensionList) {
             try {
                 contentCache = extension.injectVirtualCapabilities(contentCache, request);
             }
             catch (Exception e) {
+                if (e instanceof VirtualCapabilitiesException) {
+                    throw e;
+                }
                 LOG.error(e.getMessage());
             }
         }
@@ -107,7 +110,7 @@ public class VirtualCapabilitiesExtensionRepository {
     /**
      * Injects the virtual objects managed by the registered VirtualExtension collection and required for the specified request.
      */
-    public boolean injectVirtualResponse(AbstractServiceResponse response, ContentCache contentCache, AbstractServiceRequest<?> request) {
+    public boolean injectVirtualResponse(AbstractServiceResponse response, ContentCache contentCache, AbstractServiceRequest<?> request) throws org.n52.sos.exception.CodedException {
         boolean dataInjected = false;
         
         for (VirtualCapabilitiesExtension extension : virtualCapabilitiesExtensionList) {
@@ -115,6 +118,9 @@ public class VirtualCapabilitiesExtensionRepository {
                 dataInjected |= extension.injectVirtualResponse(response, contentCache, request);
             }
             catch (Exception e) {
+                if (e instanceof VirtualCapabilitiesException) {
+                    throw e;
+                }
                 LOG.error(e.getMessage());
             }
         }

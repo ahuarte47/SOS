@@ -59,6 +59,8 @@ import org.addition.epanet.network.structures.Link.StatType;
 import org.addition.epanet.network.structures.Node;
 import org.addition.epanet.network.structures.Tank;
 import org.addition.epanet.util.ENException;
+
+import org.n52.sos.extensions.hydrology.epanet.io.output.EpanetHydraulicQualitySim;
 import org.n52.sos.extensions.util.FileUtils;
 
 /**

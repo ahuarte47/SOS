@@ -62,6 +62,11 @@ class DynamicUtils
         super();
     }
     
+    /** Returns whether the specified ObservableModel is grouping by feature type. */ 
+    private static boolean isGroupingSosObjectByFeatureType(ObservableModel dynamicModel)
+    {
+        return (dynamicModel.capabilitiesFlags() & ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG) == ObservableModel.GROUPING_BY_FEATURE_TYPE_FLAG;
+    }
     /** Compose a complex identifier suing the parameters specified. */
     private static String composeComplexIdentifier(String identifierPrefix, String identifierKey)
     {
@@ -75,7 +80,7 @@ class DynamicUtils
     public static String makeOfferingIdentifier(ObservableModel dynamicModel, ObservableObject theObject)
     {
         String idenPrefix = ServiceConfiguration.getInstance().isUseDefaultPrefixes() ? ServiceConfiguration.getInstance().getDefaultOfferingPrefix() : "offering";
-        String identifier = dynamicModel.groupingSosObjectsByFeatureType() ? theObject.objectType : theObject.objectName;
+        String identifier = isGroupingSosObjectByFeatureType(dynamicModel) ? theObject.objectType : theObject.objectName;
         
         return composeComplexIdentifier(idenPrefix, dynamicModel.getName()+"/"+identifier);
     }
@@ -91,7 +96,7 @@ class DynamicUtils
     public static String makeProcedureIdentifier(ObservableModel dynamicModel, ObservableObject theObject)
     {
         String idenPrefix = ServiceConfiguration.getInstance().isUseDefaultPrefixes() ? ServiceConfiguration.getInstance().getDefaultProcedurePrefix() : "procedure";
-        String identifier = dynamicModel.groupingSosObjectsByFeatureType() ? theObject.objectType : theObject.objectName;
+        String identifier = isGroupingSosObjectByFeatureType(dynamicModel) ? theObject.objectType : theObject.objectName;
         
         return composeComplexIdentifier(idenPrefix, dynamicModel.getName()+"/"+identifier);
     }
@@ -99,7 +104,7 @@ class DynamicUtils
     public static String makeObservablePropertyIdentifier(ObservableModel dynamicModel, ObservableObject theObject, ObservableAttribute attribute)
     {
         String idenPrefix = ServiceConfiguration.getInstance().isUseDefaultPrefixes() ? ServiceConfiguration.getInstance().getDefaultObservablePropertyPrefix() : "property";
-        String identifier = dynamicModel.groupingSosObjectsByFeatureType() ? theObject.objectType : theObject.objectName;
+        String identifier = isGroupingSosObjectByFeatureType(dynamicModel) ? theObject.objectType : theObject.objectName;
         
         return composeComplexIdentifier(idenPrefix, dynamicModel.getName()+"/"+identifier+"/"+attribute.name);
     }
@@ -151,7 +156,7 @@ class DynamicUtils
         SamplingFeature feature = new SamplingFeature(new CodeWithAuthority(DynamicUtils.makeFeatureOfInterestIdentifier(dynamicModel, theObject)));
         feature.setDescription(theObject.description);
         
-        if (dynamicModel.groupingSosObjectsByFeatureType())
+        if (isGroupingSosObjectByFeatureType(dynamicModel))
         {
             String text = theObject.description!=null ? theObject.description+" Object='"+theObject.objectName+"'." : "Object='"+theObject.objectName+"'.";
             feature.setDescription(text);

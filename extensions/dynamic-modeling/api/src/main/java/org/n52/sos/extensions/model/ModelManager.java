@@ -73,7 +73,7 @@ public class ModelManager implements Closeable
                 {
                     String className = modelEntry.getAttributeNode("class").getValue();
                     Model model = (Model)Class.forName(className).newInstance();
-                    if (model.loadSettings(settingsFileName, document.getDocumentElement(), modelEntry)) models.add(model);
+                    if (model.loadSettings(this, settingsFileName, document.getDocumentElement(), modelEntry)) models.add(model);
                 }
             }
             if (models.size()==0)
@@ -140,6 +140,11 @@ public class ModelManager implements Closeable
         return preparedModels.size();
     }
     
+    /** Gets the direct object reference list of prepared models managed by the Object. */
+    public ConcurrentLinkedQueue<Model> preparedModelsRef()
+    {
+        return preparedModels;
+    }    
     /** Gets the list of prepared models managed by the Object. */
     public Model[] getPreparedModels()
     {

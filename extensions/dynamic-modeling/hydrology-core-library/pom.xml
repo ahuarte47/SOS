@@ -99,6 +99,13 @@
             <version>${sqlite-jdbc-version}</version>
         </dependency>
       	
+        <!-- EMAIL library dependencies -->
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+            <version>1.5.5</version>
+        </dependency>
+        
         <!-- EPANET library dependencies -->
         <dependency>
             <groupId>org.addition.epanet</groupId>
