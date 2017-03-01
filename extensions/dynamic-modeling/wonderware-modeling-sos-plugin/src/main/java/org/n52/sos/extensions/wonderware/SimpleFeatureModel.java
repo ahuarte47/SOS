@@ -291,6 +291,7 @@ public class SimpleFeatureModel extends AbstractModel
                     final ReferencedEnvelope envelope = observableContextArgs.envelope;
                     final DateTime timeFrom = observableContextArgs.timeFrom;
                     final DateTime timeTo = observableContextArgs.timeTo;
+                    final int flags = observableContextArgs.flags;
                     
                     if (!com.google.common.base.Strings.isNullOrEmpty(objectType) && objectType!=currentModel.getName())
                     {
@@ -312,6 +313,14 @@ public class SimpleFeatureModel extends AbstractModel
                         if (timeTo2!=ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG)
                         {
                             databaseAttribute.timeTo = timeTo2;
+                        }
+                        if ((flags & ObservableContextArgs.FIRST_TIMEINSTANT_FLAG)==ObservableContextArgs.FIRST_TIMEINSTANT_FLAG)
+                        {
+                            databaseAttribute.retrievalAlignment = RetrievalAlignment.StartDateAligned;
+                        }
+                        if ((flags & ObservableContextArgs.LASTEST_TIMEINSTANT_FLAG)==ObservableContextArgs.LASTEST_TIMEINSTANT_FLAG)
+                        {
+                            databaseAttribute.retrievalAlignment = RetrievalAlignment.EndDateAligned;
                         }                        
                         databaseAttributeList.add(databaseAttribute);
                     }
@@ -380,6 +389,14 @@ public class SimpleFeatureModel extends AbstractModel
                         if (timeTo2!=ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG)
                         {
                             databaseAttribute.timeTo = timeTo2;
+                        }
+                        if ((flags & ObservableContextArgs.FIRST_TIMEINSTANT_FLAG)==ObservableContextArgs.FIRST_TIMEINSTANT_FLAG)
+                        {
+                            databaseAttribute.retrievalAlignment = RetrievalAlignment.StartDateAligned;
+                        }
+                        if ((flags & ObservableContextArgs.LASTEST_TIMEINSTANT_FLAG)==ObservableContextArgs.LASTEST_TIMEINSTANT_FLAG)
+                        {
+                            databaseAttribute.retrievalAlignment = RetrievalAlignment.EndDateAligned;
                         }
                         databaseAttributeList.add(databaseAttribute);
                     }
