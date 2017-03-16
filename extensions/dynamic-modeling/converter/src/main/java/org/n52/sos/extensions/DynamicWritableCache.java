@@ -751,7 +751,7 @@ public class DynamicWritableCache extends InMemoryCacheImpl
                 observation.setResultTime(new TimeInstant(new DateTime(), TimeIndeterminateValue.template));
                 observation.setResultType(OmConstants.OBS_TYPE_MEASUREMENT);
                 
-                for (Measure measure : measureSet.measures)
+                for (Measure measure : MeasureSet.filterMeasuresWithFunction(measureSet.measures, observableContextArgs.measuresFilter))
                 {
                     ObservationValue<?> value = DynamicUtils.makeObservationValue(attribute, measure);
                     if (value==null) continue;

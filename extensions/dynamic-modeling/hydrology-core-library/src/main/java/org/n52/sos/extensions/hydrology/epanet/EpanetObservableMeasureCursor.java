@@ -59,6 +59,8 @@ class EpanetObservableMeasureCursor extends EpanetObservableDataCursor<MeasureSe
 {
     private ConcurrentLinkedQueue<MeasureSet> measureQueue = new ConcurrentLinkedQueue<MeasureSet>();
     private int requestFlags = ObservableContextArgs.NONE_FLAGS;
+    private org.joda.time.DateTime timeFrom;
+    private org.joda.time.DateTime timeTo;
     
     /** 
      * Creates a new EpanetObservableMeasureCursor object.
@@ -76,6 +78,8 @@ class EpanetObservableMeasureCursor extends EpanetObservableDataCursor<MeasureSe
     {
         super(observableModel, sqliteFileName, coordinateSystem, objectFilterPattern, objectMaximumCount, filterRegion, envelope, timeFrom, timeTo, whereClause);
         this.requestFlags = requestFlags;
+        this.timeFrom = timeFrom;
+        this.timeTo = timeTo;
     }
     
     /** 
@@ -143,6 +147,57 @@ class EpanetObservableMeasureCursor extends EpanetObservableDataCursor<MeasureSe
                 }
             }
             while (recordset.next());
+            
+            // Populate measures by complex time filter ?
+            if (numSteps>0 && timeFrom!=ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG && timeTo!=ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG && !hasValidQueryableTimeFilter(timeFrom, timeTo))
+            {
+                List<MeasureSet> populatedList = new ArrayList<MeasureSet>();
+                
+                long stepTime = numSteps>1 ? (finalTime.getMillis()-startTime.getMillis()) / (numSteps-1) : 0;
+                long initTime = timeFrom.getMillis();
+                long endsTime = timeTo.getMillis();
+                
+                for (MeasureSet previousSet : measureList)
+                {
+                    MeasureSet populatedSet = new MeasureSet();
+                    populatedSet.ownerObject = theObject;
+                    numSteps = 0;
+                    
+                    long currentTime = endsTime;
+                    long forwardTime = 0;
+                    long nwstartTime = Long.MAX_VALUE;
+                    long nwfinalTime = Long.MIN_VALUE;
+                    long nwlastsTime = 0;
+                    long measureSize = previousSet.measures.size();
+                    
+                    while (currentTime <= endsTime)
+                    {
+                        for (Measure measureValue : previousSet.measures)
+                        {
+                            currentTime = measureValue.phenomenonTime.getMillis() + forwardTime;
+                            if (currentTime < initTime || (numSteps >= 1 && currentTime == nwlastsTime)) continue;
+                            if (currentTime > endsTime || (numSteps == 1 && returnFirst)) { currentTime = Long.MAX_VALUE; break; }
+                            
+                            Measure populatedValue = new Measure();
+                            populatedValue.phenomenonTime = new org.joda.time.DateTime(currentTime, measureValue.phenomenonTime.getZone());
+                            populatedValue.value = measureValue.value;
+                            
+                            nwstartTime = Math.min(nwstartTime, currentTime);
+                            nwfinalTime = Math.max(nwfinalTime, currentTime);
+                            nwlastsTime = currentTime;
+                            
+                            populatedSet.measures.add(populatedValue);
+                            numSteps++;
+                        }
+                        forwardTime += stepTime * (measureSize - 1);
+                    }
+                    if (nwstartTime != Long.MAX_VALUE) startTime = new org.joda.time.DateTime(nwstartTime, startTime.getZone());
+                    if (nwfinalTime != Long.MIN_VALUE) finalTime = new org.joda.time.DateTime(nwfinalTime, finalTime.getZone());
+                    populatedList.add(populatedSet);
+                }
+                measureList.clear();
+                measureList = populatedList;
+            }
             
             // Save information of attributes.
             if (numSteps>0)

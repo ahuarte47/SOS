@@ -174,7 +174,7 @@ abstract class EpanetObservableDataCursor<T> implements Iterator<T>
                 nodeWhereClause = composeComplexWhere(nodeWhereClause, tempWhereClause);
                 linkWhereClause = composeComplexWhere(linkWhereClause, tempWhereClause);
             }
-            if (timeFrom!=ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG && timeTo!=ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG)
+            if (this.hasValidQueryableTimeFilter(timeFrom, timeTo))
             {
                 tempWhereClause = String.format(Locale.ENGLISH, "b.step_time>='%s' AND b.step_time<='%s'", getClockTimeAsString(timeFrom), getClockTimeAsString(timeTo));
                 nodeWhereClause = composeComplexWhere(nodeWhereClause, tempWhereClause);
@@ -247,6 +247,32 @@ abstract class EpanetObservableDataCursor<T> implements Iterator<T>
         int m = calendar.get(Calendar.MINUTE);
         int s = calendar.get(Calendar.SECOND);        
         return String.format("%02d:%02d:%02d",h,m,s);        
+    }
+    
+    /**
+     * Returns whether the specified time-range pair defines a valid SQL-queryable filter.
+     * 
+     * TODO: Now, this is valid for equal day and hour.
+     * It is a conservative test, We should test it using the real step-time between rows.
+     */
+    protected boolean hasValidQueryableTimeFilter(org.joda.time.DateTime timeFrom, org.joda.time.DateTime timeTo)
+    {
+        if (timeFrom!=ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG && timeTo!=ObservableObject.UNDEFINED_DATETIME_FILTER_FLAG)
+        {
+            long time1 = timeFrom.getMillis();
+            long time2 = timeTo.getMillis();
+            
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(time1);
+            int d1 = calendar.get(Calendar.DAY_OF_YEAR);
+            int h1 = calendar.get(Calendar.HOUR_OF_DAY);
+            calendar.setTimeInMillis(time2);
+            int d2 = calendar.get(Calendar.DAY_OF_YEAR);
+            int h2 = calendar.get(Calendar.HOUR_OF_DAY);
+            
+            return time1 < time2 && d1 == d2 && Math.abs(h2-h1) <= 1;
+        }
+        return false;
     }
     
     /**

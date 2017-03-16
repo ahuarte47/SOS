@@ -53,6 +53,9 @@ import org.n52.sos.ogc.gml.time.TimePeriod;
 import org.n52.sos.ogc.om.OmObservation;
 import org.n52.sos.ogc.om.OmObservationConstellation;
 import org.n52.sos.ogc.sos.SosConstants;
+import org.n52.sos.ogc.swe.simpleType.SweAbstractSimpleType;
+import org.n52.sos.ogc.swes.SwesExtension;
+import org.n52.sos.ogc.swes.SwesExtensions;
 import org.n52.sos.request.AbstractServiceRequest;
 import org.n52.sos.request.DescribeSensorRequest;
 import org.n52.sos.request.GetCapabilitiesRequest;
@@ -98,6 +101,7 @@ public class ObservableContextArgs {
         this.timeTo = otherContextArgs.timeTo;
         this.flags = otherContextArgs.flags;
         this.request = otherContextArgs.request;
+        this.measuresFilter = otherContextArgs.measuresFilter;
     }
     
     /**
@@ -144,6 +148,11 @@ public class ObservableContextArgs {
      * Extra flags criteria of the request.
      */
     public int flags;
+    
+    /**
+     * Measure values function/filter criteria of the request.
+     */
+    public String measuresFilter;
     
     /**
      * Parse the specified SOS request.
@@ -234,7 +243,7 @@ public class ObservableContextArgs {
     /**
      * Returns the requested identifier collection defined by the specified ServiceRequest.
      */
-    private static java.util.Map.Entry<String,Boolean> extractIdentifiers(ObservableModel dynamicModel, AbstractServiceRequest<?> request)
+    private java.util.Map.Entry<String,Boolean> extractIdentifiers(ObservableModel dynamicModel, AbstractServiceRequest<?> request)
     {
         Map<String,String> identifiersMap = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER);
         List<String> identifiersList = new ArrayList<String>();
@@ -326,6 +335,49 @@ public class ObservableContextArgs {
             return new AbstractMap.SimpleEntry<String,Boolean>(ObservableObject.UNDEFINED_OBJECT_ID_FLAG, true);
         }
         
+        // Extract optional user-specific data to apply to the query.
+        if (request.isSetExtensions())
+        {
+            SwesExtensions extensions = request.getExtensions();
+            SweAbstractSimpleType<?> itemOb = null;
+            
+            for (SwesExtension<?> extension : extensions.getExtensions()) 
+            {
+                Object value = extension.getValue();
+                
+                if (value != null && value instanceof SweAbstractSimpleType<?> && (value = (itemOb = (SweAbstractSimpleType<?>)value).getValue()) != null)
+                {
+                    if (itemOb.isSetIdentifier())
+                    {
+                        String key = itemOb.getIdentifier();
+                        
+                        if (key.equalsIgnoreCase("featuresOfInterest"))
+                        {
+                            List<String> tempList = new ArrayList<String>();
+                            for (String foid : value.toString().split(",")) tempList.add(foid);
+                            extractIdentifiers(tempList, identifiersMap, identifiersList);
+                        }
+                        else
+                        if (key.equalsIgnoreCase("measureFilter"))
+                        {
+                            String functionDecl = value.toString();
+                            
+                            if (functionDecl.equals("sos_first(obs)")) {
+                                this.flags |= ObservableContextArgs.FIRST_TIMEINSTANT_FLAG;
+                            }
+                            else
+                            if (functionDecl.equals("sos_last(obs)")) {
+                                this.flags |= ObservableContextArgs.LASTEST_TIMEINSTANT_FLAG;
+                            }
+                            else {
+                                this.measuresFilter = functionDecl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         // Skip no-current model.
         String  objectId = ObservableObject.UNDEFINED_OBJECT_ID_FLAG;
         String modelName = dynamicModel.getName();
@@ -337,7 +389,7 @@ public class ObservableContextArgs {
             
             if (split!=null && split.length==2 && split[0].equalsIgnoreCase(modelName))
             {
-                objectId += split[1] + ",";
+                if (!split[1].equals("*")) objectId += split[1] + ",";
                 failFunc = false;
             }
         }
